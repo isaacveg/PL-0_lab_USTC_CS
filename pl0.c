@@ -158,6 +158,57 @@ void getsym(void)
 		sym = SYM_NOT; //!
 		getch();
 	}
+	else if (ch == '[')
+	{
+		sym = SYM_LBRACK;
+		getch();
+	}
+	else if (ch == ']')
+	{
+		sym = SYM_RBRACK;
+		getch();
+	}
+	else if (ch == '/')
+	//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
+	{
+		getch();
+		if (ch == '/') // 读到"//"
+		{
+			int tag = 1;
+			while (tag)
+			{
+				getch();
+				if (cc == ll)//读完本行
+				{
+					tag = 0;
+					getch();
+				}
+			}
+			getsym();
+		}
+		else if (ch == '*') // 读到"/*"
+		{
+			int tag = 1;
+			while (tag)
+			{
+				getch();
+				if (ch == '*')
+				{
+					getch();
+					if (ch == '/') //读到"*/"
+					{
+						tag = 0;
+						getch();
+					}
+				}
+			}
+			getsym();
+		}
+		else
+		{
+			sym = SYM_SLASH;
+		}
+	}
 	else
 	{ // other tokens
 		i = NSYM;
@@ -210,7 +261,7 @@ void test(symset s1, symset s2, int n)
 //////////////////////////////////////////////////////////////////////
 int dx; // data allocation index
 
-// enter object(constant, variable or procedre) into table.//添加到符号表
+// enter object(constant, variable , procedre or array) into table.//添加到符号表
 void enter(int kind)
 {
 	mask *mk;
@@ -236,6 +287,9 @@ void enter(int kind)
 	case ID_PROCEDURE:
 		mk = (mask *)&table[tx];
 		mk->level = level;
+		break;
+	case ID_ARRAY: /*********************/
+		/*code*/
 		break;
 	} // switch
 } // enter
@@ -284,12 +338,43 @@ void constdeclaration()
 } // constdeclaration
 
 //////////////////////////////////////////////////////////////////////
+int dim; //声明数组的维度
+
+void dimDeclaration(void)
+{
+	dim++;
+	int i;
+	if (sym == SYM_IDENTIFIER || sym == SYM_NUMBER)
+	{ //如何enter 如何组织记录一个数组
+
+		/*
+		if (!(i = position(id)))
+		{
+			error(11); // Undeclared identifier.
+		}
+		else if (table[i].kind == ID_PROCEDURE)
+		{
+			error(26); // Illegal assignment.
+			i = 0;
+		}
+		*/
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
 void vardeclaration(void)
 {
 	if (sym == SYM_IDENTIFIER)
 	{
-		enter(ID_VARIABLE);
 		getsym();
+		if (sym == SYM_LBRACK)
+		{
+			getsym();
+			dim = 0;
+			dimDeclaration();
+		}
+		else
+			enter(ID_VARIABLE);
 	}
 	else
 	{
@@ -527,7 +612,7 @@ void statement(symset fsys)
 		mk = (mask *)&table[i];
 		if (i)
 		{
-			gen(STO, level - mk->level, mk->address);
+			gen(STO, level - mk->level, mk->address); //变量赋值语句翻译为STO 数组赋值翻译成什么？
 		}
 	}
 	else if (sym == SYM_CALL)
@@ -680,12 +765,12 @@ void block(symset fsys)
 			do
 			{
 				vardeclaration();
-				while (sym == SYM_COMMA)
+				while (sym == SYM_COMMA) //读到','
 				{
 					getsym();
 					vardeclaration();
 				}
-				if (sym == SYM_SEMICOLON)
+				if (sym == SYM_SEMICOLON) //读到';'
 				{
 					getsym();
 				}

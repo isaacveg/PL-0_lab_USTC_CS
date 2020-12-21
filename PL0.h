@@ -3,7 +3,7 @@
 #define NRW 11		 // number of reserved words
 #define TXMAX 500	 // length of identifier table
 #define MAXNUMLEN 14 // maximum number of digits in numbers
-#define NSYM 10		 // maximum number of symbols in array ssym and csym
+#define NSYM 9		 // maximum number of symbols in array ssym and csym
 #define MAXIDLEN 10	 // length of identifiers
 
 #define MAXADDRESS 32767 // maximum address
@@ -46,16 +46,19 @@ enum symtype
 	SYM_CONST,
 	SYM_VAR,
 	SYM_PROCEDURE,
-	SYM_AND, // &&
-	SYM_OR,	 // ||
-	SYM_NOT	 // !
+	SYM_AND,	// &&
+	SYM_OR,		// ||
+	SYM_NOT,	// !
+	SYM_LBRACK, // [
+	SYM_RBRACK	// ]
 };
 
 enum idtype
 {
 	ID_CONSTANT,
 	ID_VARIABLE,
-	ID_PROCEDURE
+	ID_PROCEDURE,
+	ID_ARRAY
 };
 
 enum opcode
@@ -126,7 +129,7 @@ char *err_msg[] =
 		/* 23 */ "The symbol can not be followed by a factor.",
 		/* 24 */ "The symbol can not be as the beginning of an expression.",
 		/* 25 */ "The number is too great.",
-		/* 26 */ "",
+		/* 26 */ "Procedure identifier can not be in an array declaration",
 		/* 27 */ "",
 		/* 28 */ "",
 		/* 29 */ "",
@@ -145,7 +148,7 @@ int kk;
 int err;
 int cx; // index of current instruction to be generated.
 int level = 0;
-int tx = 0;
+int tx = 0; //index of table
 
 char line[80];
 
@@ -164,28 +167,28 @@ int wsym[NRW + 1] =
 
 int ssym[NSYM + 1] =
 	{
-		SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES, SYM_SLASH,
+		SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES,
 		SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON};
 
 char csym[NSYM + 1] =
 	{
-		' ', '+', '-', '*', '/', '(', ')', '=', ',', '.', ';'};
+		' ', '+', '-', '*', '(', ')', '=', ',', '.', ';'};
 
 #define MAXINS 8
 char *mnemonic[MAXINS] =
 	{
 		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC"};
 
-typedef struct
+typedef struct //comtab与mask占用同样的内存空间
 {
 	char name[MAXIDLEN + 1];
 	int kind;
 	int value;
 } comtab;
 
-comtab table[TXMAX];
+comtab table[TXMAX]; //符号表，通过enter添加条目，有const、variable、procedure、array四种类型，const使用comtab存储，其他三种使用mask
 
-typedef struct
+typedef struct //mask与comtab占用同样的内存空间
 {
 	char name[MAXIDLEN + 1];
 	int kind;
