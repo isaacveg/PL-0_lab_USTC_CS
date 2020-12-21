@@ -338,11 +338,11 @@ void constdeclaration()
 } // constdeclaration
 
 //////////////////////////////////////////////////////////////////////
-int dim; //声明数组的维度
+int arrayDim; //声明数组的维度
 
-void dimDeclaration(void)
+void arrayDeclaration(void)
 {
-	dim++;
+	arrayDim++;
 	int i;
 	if (sym == SYM_IDENTIFIER || sym == SYM_NUMBER)
 	{ //如何enter 如何组织记录一个数组
@@ -370,8 +370,8 @@ void vardeclaration(void)
 		if (sym == SYM_LBRACK)
 		{
 			getsym();
-			dim = 0;
-			dimDeclaration();
+			arrayDim = 0;
+			arrayDeclaration();
 		}
 		else
 			enter(ID_VARIABLE);
