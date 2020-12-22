@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #define NRW 11				//保留字数
 #define TXMAX 500			//标识符表的长度
 #define MAXNUMLEN 14		//数字的最大位数
@@ -33,6 +32,7 @@ enum symtype
 	SYM_SEMICOLON,		//符号	;
 	SYM_PERIOD,			//符号	.
 	SYM_BECOMES,		//符号	:=
+	SYM_ASSIGN,		//符号	=
 	SYM_BEGIN,			//关键字	begin
 	SYM_END,			//关键字	end
 	SYM_IF,				//关键字	if
@@ -55,12 +55,13 @@ enum symtype
 enum idtype
 {
 	ID_CONSTANT,	//常数
-	ID_VARIABLE,	//变量
+	ID_VARIABLE,	//值类型变量
 	ID_PROCEDURE,	//过程
 	ID_ARRAY,		//数组
-	ID_REFERENCE	//引用
+	ID_REFERENCE	//引用类型变量
 };
 
+//PL0处理机指令集
 enum opcode
 {
 	LIT,	//将常数置于栈顶
@@ -73,6 +74,7 @@ enum opcode
 	JPC		//一组算术或逻辑运算指令
 };
 
+//PL0处理机运算集
 enum oprcode
 {
 	OPR_RET,	//return
@@ -138,20 +140,21 @@ char* err_msg[] =
 	/* 31 */ "",
 	/* 32 */ "There are too many levels." };
 
-char ch;				//上次读取的字符
-int sym;				//上次读取的符号
-char id[MAXIDLEN + 1];	//上次读取的标识符
-int num;				//上次读取的数字
-int cc;					//字符数
-int ll;					//line length
+char lastCharacter;				//上次读取的字符
+int lastSymbol;					//上次读取的符号
+char lastIdName[MAXIDLEN + 1];	//上次读取的标识符
+int lastNumber;					//上次读取的数字
+int characterCount;				//字符数
+int lineLenth;
 int kk;
-int err;
-int cx;					//要生成的当前指令的索引
-int level = 0;
-int tx = 0;				//符号表索引
+int errorCount;					//错误数量
+int currentInstructionIndex;	//要生成的当前指令的索引
+int currentLevel = 0;			//层级
+int tabIndex = 0;				//符号表索引
 
 char line[80];
 
+//代码数组
 instruction code[CXMAX];
 
 //关键字集合
@@ -159,7 +162,8 @@ char* word[NRW + 1] =
 {
 	"", /* place holder */
 	"begin", "call", "const", "do", "end", "if",
-	"odd", "procedure", "then", "var", "while" };
+	"odd", "procedure", "then", "var", "while"
+};
 
 int wsym[NRW + 1] =
 {
@@ -173,8 +177,8 @@ int ssym[NSYM + 1] =
 
 char csym[NSYM + 1] =
 {
-	' ', '+', '-', '*', '(', ')', '=', ',', '.', ';' };
-
+	' ', '+', '-', '*', '(', ')', '=', ',', '.', ';'
+};
 
 #define MAXINS 8	//PL0处理机指令集大小
 
@@ -184,21 +188,41 @@ char* mnemonic[MAXINS] =
 	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC"
 };
 
-typedef struct //comtab与mask占用同样的内存空间
+//常数符号
+typedef struct
 {
-	char name[MAXIDLEN + 1];
-	int kind;
-	int value;
+	char name[MAXIDLEN + 1];	//标识符的名称
+	int kind;					//标识符的类型（值类型、引用类型）
+	int value;					//标识符的值
 }comtab;
 
-comtab table[TXMAX]; //符号表，通过enter添加条目，有const、variable、procedure、array四种类型，const使用comtab存储，其他三种使用mask
-
-typedef struct //mask与comtab占用同样的内存空间
+//值变量符号
+typedef struct
 {
-	char name[MAXIDLEN + 1];
-	int kind;
-	short level;
-	short address;
-} mask;
+	char name[MAXIDLEN + 1];	//标识符的名称
+	int kind;					//标识符的类型（值类型、引用类型）
+	short level;				//标识符的层级
+	short address;				//标识符对应内容的地址
+}mask;
 
+//引用变量符号
+typedef struct
+{
+	char name[MAXIDLEN + 1];	//标识符的名称
+	int kind;					//标识符的类型（值类型、引用类型）
+	short level;				//标识符的层级
+	short index;				//标识符指向的标识符在符号表中的索引
+}qmask;
+
+/*
+符号表
+通过enter添加条目
+有const、variable、procedure、array、quote五种类型
+onst使用comtab
+quote使用qmask
+其余使用mask
+*/
+comtab table[TXMAX];
+
+//编译文件
 FILE* infile;
