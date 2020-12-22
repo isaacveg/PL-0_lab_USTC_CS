@@ -60,14 +60,14 @@ enum idtype
 
 enum opcode
 {
-	LIT,
-	OPR,
-	LOD,
-	STO,
-	CAL,
-	INT,
-	JMP,
-	JPC
+	LIT,	//将常数置于栈顶
+	OPR,	//一组算术或逻辑运算指令
+	LOD,	//将变量值置于栈顶
+	STO,	//将栈顶的值赋与某变量
+	CAL,	//用于过程调用的指令
+	INT,	//在数据栈中分配存贮空间
+	JMP,	//用于if, while 语句的条件或无条件控制转移指令
+	JPC		//一组算术或逻辑运算指令
 };
 
 enum oprcode
@@ -78,7 +78,7 @@ enum oprcode
 	OPR_MIN,	//算术运算符	减
 	OPR_MUL,	//算术运算符	乘
 	OPR_DIV,	//算术运算符	除
-	OPR_ODD,	//算术运算符	ODD
+	OPR_ODD,	//odd
 	OPR_EQU,	//逻辑运算符	等于
 	OPR_NEQ,	//逻辑运算符	不等于
 	OPR_LES,	//逻辑运算符	小于
@@ -90,6 +90,7 @@ enum oprcode
 	OPR_NOT,	//逻辑运算符	非
 };
 
+//三格式指令FLA
 typedef struct
 {
 	int f; // function code
@@ -97,44 +98,43 @@ typedef struct
 	int a; // displacement address
 } instruction;
 
-//////////////////////////////////////////////////////////////////////
-char *err_msg[] =
-	{
-		/*  0 */ "",
-		/*  1 */ "Found ':=' when expecting '='.",
-		/*  2 */ "There must be a number to follow '='.",
-		/*  3 */ "There must be an '=' to follow the identifier.",
-		/*  4 */ "There must be an identifier to follow 'const', 'var', or 'procedure'.",
-		/*  5 */ "Missing ',' or ';'.",
-		/*  6 */ "Incorrect procedure name.",
-		/*  7 */ "Statement expected.",
-		/*  8 */ "Follow the statement is an incorrect symbol.",
-		/*  9 */ "'.' expected.",
-		/* 10 */ "';' expected.",
-		/* 11 */ "Undeclared identifier.",
-		/* 12 */ "Illegal assignment.",
-		/* 13 */ "':=' expected.",
-		/* 14 */ "There must be an identifier to follow the 'call'.",
-		/* 15 */ "A constant or variable can not be called.",
-		/* 16 */ "'then' expected.",
-		/* 17 */ "';' or 'end' expected.",
-		/* 18 */ "'do' expected.",
-		/* 19 */ "Incorrect symbol.",
-		/* 20 */ "Relative operators expected.",
-		/* 21 */ "Procedure identifier can not be in an expression.",
-		/* 22 */ "Missing ')'.",
-		/* 23 */ "The symbol can not be followed by a factor.",
-		/* 24 */ "The symbol can not be as the beginning of an expression.",
-		/* 25 */ "The number is too great.",
-		/* 26 */ "Procedure identifier can not be in an array declaration",
-		/* 27 */ "",
-		/* 28 */ "",
-		/* 29 */ "",
-		/* 30 */ "",
-		/* 31 */ "",
-		/* 32 */ "There are too many levels."};
+//错误信息库
+char* err_msg[] =
+{
+	/*  0 */ "",
+	/*  1 */ "Found ':=' when expecting '='.",
+	/*  2 */ "There must be a number to follow '='.",
+	/*  3 */ "There must be an '=' to follow the identifier.",
+	/*  4 */ "There must be an identifier to follow 'const', 'var', or 'procedure'.",
+	/*  5 */ "Missing ',' or ';'.",
+	/*  6 */ "Incorrect procedure name.",
+	/*  7 */ "Statement expected.",
+	/*  8 */ "Follow the statement is an incorrect symbol.",
+	/*  9 */ "'.' expected.",
+	/* 10 */ "';' expected.",
+	/* 11 */ "Undeclared identifier.",
+	/* 12 */ "Illegal assignment.",
+	/* 13 */ "':=' expected.",
+	/* 14 */ "There must be an identifier to follow the 'call'.",
+	/* 15 */ "A constant or variable can not be called.",
+	/* 16 */ "'then' expected.",
+	/* 17 */ "';' or 'end' expected.",
+	/* 18 */ "'do' expected.",
+	/* 19 */ "Incorrect symbol.",
+	/* 20 */ "Relative operators expected.",
+	/* 21 */ "Procedure identifier can not be in an expression.",
+	/* 22 */ "Missing ')'.",
+	/* 23 */ "The symbol can not be followed by a factor.",
+	/* 24 */ "The symbol can not be as the beginning of an expression.",
+	/* 25 */ "The number is too great.",
+	/* 26 */ "Procedure identifier can not be in an array declaration",
+	/* 27 */ "",
+	/* 28 */ "",
+	/* 29 */ "",
+	/* 30 */ "",
+	/* 31 */ "",
+	/* 32 */ "There are too many levels." };
 
-//////////////////////////////////////////////////////////////////////
 char ch;			   //上次读取的字符
 int sym;			   //上次读取的符号
 char id[MAXIDLEN + 1]; //上次读取的标识符
@@ -152,37 +152,41 @@ char line[80];
 instruction code[CXMAX];
 
 //关键字集合
-char *word[NRW + 1] =
-	{
-		"", /* place holder */
-		"begin", "call", "const", "do", "end", "if",
-		"odd", "procedure", "then", "var", "while"};
+char* word[NRW + 1] =
+{
+	"", /* place holder */
+	"begin", "call", "const", "do", "end", "if",
+	"odd", "procedure", "then", "var", "while" };
 
 int wsym[NRW + 1] =
-	{
-		SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
-		SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE};
+{
+	SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
+	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE };
 
 int ssym[NSYM + 1] =
-	{
-		SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES,
-		SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON};
+{
+	SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES,
+	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON };
 
 char csym[NSYM + 1] =
-	{
-		' ', '+', '-', '*', '(', ')', '=', ',', '.', ';'};
+{
+	' ', '+', '-', '*', '(', ')', '=', ',', '.', ';' };
 
-#define MAXINS 8
-char *mnemonic[MAXINS] =
-	{
-		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC"};
+
+#define MAXINS 8	//PL0处理机指令集大小
+
+//PL0处理机指令字符串集
+char* mnemonic[MAXINS] =
+{
+	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC"
+};
 
 typedef struct //comtab与mask占用同样的内存空间
 {
 	char name[MAXIDLEN + 1];
 	int kind;
 	int value;
-} comtab;
+}comtab;
 
 comtab table[TXMAX]; //符号表，通过enter添加条目，有const、variable、procedure、array四种类型，const使用comtab存储，其他三种使用mask
 
@@ -194,4 +198,4 @@ typedef struct //mask与comtab占用同样的内存空间
 	short address;
 } mask;
 
-FILE *infile;
+FILE* infile;
