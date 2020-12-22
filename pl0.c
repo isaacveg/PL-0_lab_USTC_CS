@@ -1,17 +1,12 @@
-// pl0 compiler source code
-
 #pragma warning(disable : 4996)
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
 #include "PL0.h"
 #include "set.c"
 
-//////////////////////////////////////////////////////////////////////
-// print error message.
+//打印错误信息
 void error(int n)
 {
 	int i;
@@ -48,8 +43,7 @@ void getch(void)
 	ch = line[++cc];
 } // getch
 
-//////////////////////////////////////////////////////////////////////
-// gets a symbol from input stream.
+//获取输入符号
 void getsym(void)
 {
 	int i, k;
@@ -228,8 +222,7 @@ void getsym(void)
 	}
 } // getsym
 
-//////////////////////////////////////////////////////////////////////
-// generates (assembles) an instruction. //生成中间代码
+//生成中间代码
 void gen(int x, int y, int z)
 {
 	if (cx > CXMAX)
@@ -242,8 +235,7 @@ void gen(int x, int y, int z)
 	code[cx++].a = z;
 } // gen
 
-//////////////////////////////////////////////////////////////////////
-// tests if error occurs and skips all symbols that do not belongs to s1 or s2.
+//测试是否发生错误并跳过不属于s1或s2的所有符号
 void test(symset s1, symset s2, int n)
 {
 	symset s;
@@ -258,10 +250,9 @@ void test(symset s1, symset s2, int n)
 	}
 } // test
 
-//////////////////////////////////////////////////////////////////////
 int dx; // data allocation index
 
-// enter object(constant, variable , procedre or array) into table.//添加到符号表
+//添加到符号表
 void enter(int kind)
 {
 	mask *mk;
@@ -395,7 +386,7 @@ void listcode(int from, int to)
 	printf("\n");
 } // listcode
 
-//////////////////////////////////////////////////////////////////////
+//因子
 void factor(symset fsys)
 {
 	void expression(symset fsys);
@@ -466,7 +457,7 @@ void factor(symset fsys)
 	} // if
 } // factor
 
-//////////////////////////////////////////////////////////////////////
+//项
 void term(symset fsys)
 {
 	int mulop;
@@ -491,7 +482,7 @@ void term(symset fsys)
 	destroyset(set);
 } // term
 
-//////////////////////////////////////////////////////////////////////
+//表达式
 void expression(symset fsys)
 {
 	int addop;
@@ -518,7 +509,7 @@ void expression(symset fsys)
 	destroyset(set);
 } // expression
 
-//////////////////////////////////////////////////////////////////////
+//条件
 void condition(symset fsys)
 {
 	int relop;
@@ -581,7 +572,7 @@ void condition(symset fsys)
 	}		  // else
 } // condition
 
-//////////////////////////////////////////////////////////////////////
+//声明
 void statement(symset fsys)
 {
 	int i, cx1, cx2;
