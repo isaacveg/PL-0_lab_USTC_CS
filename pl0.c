@@ -49,7 +49,7 @@ void getch(void)
 		ll = cc = 0;
 		printf("%5d  ", cx);
 		while ((!feof(infile)) // added & modified by alex 01-02-09
-			   && ((ch = getc(infile)) != '\n'))
+			&& ((ch = getc(infile)) != '\n'))
 		{
 			printf("%c", ch);
 			line[++ll] = ch;
@@ -154,6 +154,11 @@ void getsym(void)
 			sym = SYM_AND; // &&
 			getch();
 		}
+		else
+		{
+			sym = SYM_QUOTE; //&
+			getch();
+		}
 	}
 	else if (ch == '|')
 	{
@@ -180,7 +185,7 @@ void getsym(void)
 		getch();
 	}
 	else if (ch == '/')
-	//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
+		//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
 	{
 		getch();
 		if (ch == '/') // 读到"//"
@@ -254,11 +259,11 @@ PL/0 编译程序不仅完成通常的词法分析、语法分析，而且还产
 PL/0 处理机有两类存贮，目标代码放在一个固定的存贮数组code 中，而所
 需数据组织成一个栈形式存放。
 PL/0 处理机的指令集根据PL/0 语言的要求而设计，它包括以下的指令：
-（1）LIT 将常数置于栈顶 
-（2）LOD 将变量值置于栈顶 
-（3）STO 将栈顶的值赋与某变量 
-（4）CAL 用于过程调用的指令 
-（5）INT 在数据栈中分配存贮空间 
+（1）LIT 将常数置于栈顶
+（2）LOD 将变量值置于栈顶
+（3）STO 将栈顶的值赋与某变量
+（4）CAL 用于过程调用的指令
+（5）INT 在数据栈中分配存贮空间
 （6）JMP, JPC  用于if, while 语句的条件或无条件控制转移指令
 （7）OPR 一组算术或逻辑运算指令
 */
@@ -315,7 +320,7 @@ int dx; //数据分配索引
 //向符号表添加新的符号，并确定标识符的有关属性
 void enter(int kind)
 {
-	mask *mk;
+	mask* mk;
 
 	tx++;
 	strcpy(table[tx].name, id);
@@ -331,22 +336,28 @@ void enter(int kind)
 		table[tx].value = num;
 		break;
 	case ID_VARIABLE:
-		mk = (mask *)&table[tx];
+		mk = (mask*)& table[tx];
 		mk->level = level;
 		mk->address = dx++;
 		break;
 	case ID_PROCEDURE:
-		mk = (mask *)&table[tx];
+		mk = (mask*)& table[tx];
 		mk->level = level;
 		break;
 	case ID_ARRAY: /*********************/
 		/*code*/
 		break;
+	case ID_REFERENCE:
+		mk = (mask*)& table[tx];
+		mk->level = level;
+		mk->address = dx++;
+		mk->kind
+		break;
 	} // switch
 }
 
 //在符号表中查找标识符
-int position(char *id)
+int position(char* id)
 {
 	int i;
 	strcpy(table[0].name, id);
@@ -356,7 +367,7 @@ int position(char *id)
 	return i;
 }
 
-//////////////////////////////////////////////////////////////////////
+//常数声明
 void constdeclaration()
 {
 	if (sym == SYM_IDENTIFIER)
@@ -389,6 +400,7 @@ void constdeclaration()
 
 int dim;//声明数组的维度
 
+//数组声明
 void dimDeclaration(void)
 {
 	dim++;
@@ -410,7 +422,7 @@ void dimDeclaration(void)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////
+//变量声明
 void vardeclaration(void)
 {
 	if (sym == SYM_IDENTIFIER)
@@ -425,17 +437,32 @@ void vardeclaration(void)
 		else
 			enter(ID_VARIABLE);
 	}
+	else if (sym == SYM_QUOTE)
+	{
+		getsym();
+		if (sym == SYM_IDENTIFIER)
+		{
+			getsym();
+			enter(ID_REFERENCE);
+		}
+		else
+			error(27);	//There must be an identifier to follow '&'.
+	}
 	else
 	{
-		error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
+		error(4);	//There must be an identifier to follow 'const', 'var', or 'procedure'.
 	}
 }
 
-//////////////////////////////////////////////////////////////////////
+/*
+每一个分程序（过程）被编译结束后，将列出该部分PL/0 程序代码。
+注意，每个分程序（过程）的第一条指令未被列出。
+该指令是跳转指令。
+其作用是绕过该分程序的说明部分所产生的代码（含过程说明所产生的代码
+*/
 void listcode(int from, int to)
 {
 	int i;
-
 	printf("\n");
 	for (i = from; i < to; i++)
 	{
@@ -465,12 +492,12 @@ void factor(symset fsys)
 			{
 				switch (table[i].kind)
 				{
-					mask *mk;
+					mask* mk;
 				case ID_CONSTANT:
 					gen(LIT, 0, table[i].value);
 					break;
 				case ID_VARIABLE:
-					mk = (mask *)&table[i];
+					mk = (mask*)& table[i];
 					gen(LOD, level - mk->level, mk->address);
 					break;
 				case ID_PROCEDURE:
@@ -638,7 +665,7 @@ void statement(symset fsys)
 
 	if (sym == SYM_IDENTIFIER)
 	{ // variable assignment
-		mask *mk;
+		mask* mk;
 		if (!(i = position(id)))
 		{
 			error(11); // Undeclared identifier.
@@ -658,7 +685,7 @@ void statement(symset fsys)
 			error(13); // ':=' expected.
 		}
 		expression(fsys);
-		mk = (mask *)&table[i];
+		mk = (mask*)& table[i];
 		if (i)
 		{
 			gen(STO, level - mk->level, mk->address); //变量赋值语句翻译为STO 数组赋值翻译成什么？
@@ -679,8 +706,8 @@ void statement(symset fsys)
 			}
 			else if (table[i].kind == ID_PROCEDURE)
 			{
-				mask *mk;
-				mk = (mask *)&table[i];
+				mask* mk;
+				mk = (mask*)& table[i];
 				gen(CAL, level - mk->level, mk->address);
 			}
 			else
@@ -770,14 +797,14 @@ void statement(symset fsys)
 void block(symset fsys)
 {
 	int cx0; // initial code index
-	mask *mk;
+	mask* mk;
 	int block_dx;
 	int savedTx;
 	symset set1, set;
 
 	dx = 3;
 	block_dx = dx;
-	mk = (mask *)&table[tx];
+	mk = (mask*)& table[tx];
 	mk->address = cx;
 	gen(JMP, 0, 0);
 	if (level > MAXLEVEL)
@@ -1068,7 +1095,7 @@ void interpret()
 
 void main()
 {
-	FILE *hbin;
+	FILE* hbin;
 	char s[80];
 	int i;
 	symset set, set1, set2;

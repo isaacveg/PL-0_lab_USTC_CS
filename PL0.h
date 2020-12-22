@@ -13,7 +13,7 @@
 
 enum symtype
 {
-	SYM_NULL,			//空
+	SYM_NULL,			//NULL
 	SYM_IDENTIFIER,		//标识符
 	SYM_NUMBER,			//常数
 	SYM_PLUS,			//符号	+
@@ -47,15 +47,18 @@ enum symtype
 	SYM_OR,				//符号	||
 	SYM_NOT,			//符号	!
 	SYM_LBRACK,			//符号	[
-	SYM_RBRACK			//符号	]
+	SYM_RBRACK,			//符号	]
+	SYM_QUOTE			//符号	&
 };
 
+//标识符的类型
 enum idtype
 {
-	ID_CONSTANT,
-	ID_VARIABLE,
-	ID_PROCEDURE,
-	ID_ARRAY
+	ID_CONSTANT,	//常数
+	ID_VARIABLE,	//变量
+	ID_PROCEDURE,	//过程
+	ID_ARRAY,		//数组
+	ID_REFERENCE	//引用
 };
 
 enum opcode
@@ -127,20 +130,20 @@ char* err_msg[] =
 	/* 23 */ "The symbol can not be followed by a factor.",
 	/* 24 */ "The symbol can not be as the beginning of an expression.",
 	/* 25 */ "The number is too great.",
-	/* 26 */ "Procedure identifier can not be in an array declaration",
-	/* 27 */ "",
+	/* 26 */ "Procedure identifier can not be in an array declaration.",
+	/* 27 */ "There must be an identifier to follow '&'.",
 	/* 28 */ "",
 	/* 29 */ "",
 	/* 30 */ "",
 	/* 31 */ "",
 	/* 32 */ "There are too many levels." };
 
-char ch;			   //上次读取的字符
-int sym;			   //上次读取的符号
-char id[MAXIDLEN + 1]; //上次读取的标识符
-int num;			   //上次读取的数字
-int cc;				   //字符数
-int ll;				   //line length
+char ch;				//上次读取的字符
+int sym;				//上次读取的符号
+char id[MAXIDLEN + 1];	//上次读取的标识符
+int num;				//上次读取的数字
+int cc;					//字符数
+int ll;					//line length
 int kk;
 int err;
 int cx;					//要生成的当前指令的索引
