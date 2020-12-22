@@ -578,7 +578,7 @@ void condition(symset fsys)
 	}		  // else
 }
 
-//声明
+//语句
 void statement(symset fsys)
 {
 	int i, cx1, cx2;
@@ -714,7 +714,7 @@ void statement(symset fsys)
 	test(fsys, phi, 19);
 }
 
-//////////////////////////////////////////////////////////////////////
+//程序体
 void block(symset fsys)
 {
 	int cx0; // initial code index

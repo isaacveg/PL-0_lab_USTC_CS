@@ -1,56 +1,53 @@
 #include <stdio.h>
 
-#define NRW 11		 // number of reserved words
-#define TXMAX 500	 // length of identifier table
-#define MAXNUMLEN 14 // maximum number of digits in numbers
-#define NSYM 9		 // maximum number of symbols in array ssym and csym
-#define MAXIDLEN 10	 // length of identifiers
-
-#define MAXADDRESS 32767 // maximum address
-#define MAXLEVEL 32		 // maximum depth of nesting block
-#define CXMAX 500		 // size of code array
-
-#define MAXSYM 30 // maximum number of symbols
-
-#define STACKSIZE 1000 // maximum storage
+#define NRW 11				//保留字数
+#define TXMAX 500			//标识符表的长度
+#define MAXNUMLEN 14		//数字的最大位数
+#define NSYM 9				//数组ssym和csym中的最大符号数
+#define MAXIDLEN 10			//标识符长度
+#define MAXADDRESS 32767	//最大地址
+#define MAXLEVEL 32			//嵌套块最大深度
+#define CXMAX 500			//代码数组的大小
+#define MAXSYM 30			//最大符号数
+#define STACKSIZE 1000		//最大存储量
 
 enum symtype
 {
-	SYM_NULL,
-	SYM_IDENTIFIER,
-	SYM_NUMBER,
-	SYM_PLUS,
-	SYM_MINUS,
-	SYM_TIMES,
-	SYM_SLASH,
-	SYM_ODD,
-	SYM_EQU,
-	SYM_NEQ,
-	SYM_LES,
-	SYM_LEQ,
-	SYM_GTR,
-	SYM_GEQ,
-	SYM_LPAREN,
-	SYM_RPAREN,
-	SYM_COMMA,
-	SYM_SEMICOLON,
-	SYM_PERIOD,
-	SYM_BECOMES,
-	SYM_BEGIN,
-	SYM_END,
-	SYM_IF,
-	SYM_THEN,
-	SYM_WHILE,
-	SYM_DO,
-	SYM_CALL,
-	SYM_CONST,
-	SYM_VAR,
-	SYM_PROCEDURE,
-	SYM_AND,	// &&
-	SYM_OR,		// ||
-	SYM_NOT,	// !
-	SYM_LBRACK, // [
-	SYM_RBRACK	// ]
+	SYM_NULL,			//空
+	SYM_IDENTIFIER,		//标识符
+	SYM_NUMBER,			//常数
+	SYM_PLUS,			//符号	+
+	SYM_MINUS,			//符号	-
+	SYM_TIMES,			//符号	*
+	SYM_SLASH,			//符号	/
+	SYM_ODD,			//符号	odd
+	SYM_EQU,			//符号	=
+	SYM_NEQ,			//符号	<>
+	SYM_LES,			//符号	<
+	SYM_LEQ,			//符号	<=
+	SYM_GTR,			//符号	>
+	SYM_GEQ,			//符号	>=
+	SYM_LPAREN,			//符号	(
+	SYM_RPAREN,			//符号	)
+	SYM_COMMA,			//符号	,
+	SYM_SEMICOLON,		//符号	;
+	SYM_PERIOD,			//符号	.
+	SYM_BECOMES,		//符号	:=
+	SYM_BEGIN,			//关键字	begin
+	SYM_END,			//关键字	end
+	SYM_IF,				//关键字	if
+	SYM_THEN,			//关键字	then
+	SYM_WHILE,			//关键字	while
+	SYM_DO,				//关键字	do
+	SYM_CALL,			//关键字	call
+	SYM_CONST,			//关键字	const
+	SYM_VAR,			//关键字	var
+	SYM_PROCEDURE,		//关键字	procedure
+	SYM_AND,			//符号	&&
+	SYM_OR,				//符号	||
+	SYM_NOT,			//符号	!
+	SYM_LBRACK,			//符号	[
+	SYM_RBRACK			//符号	]
 };
 
 enum idtype
