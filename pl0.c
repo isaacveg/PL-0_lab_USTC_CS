@@ -76,7 +76,15 @@ void getsym(void)
 		if (++i)
 			sym = wsym[i]; // symbol is a reserved word
 		else
-			sym = SYM_IDENTIFIER; // symbol is an identifier
+		{
+			if (ch == '[')
+			{
+				sym = SYM_ARRAY; // symbol is an array
+				getch();
+			}
+			else
+				sym = SYM_IDENTIFIER; // symbol is an identifier
+		}
 	}
 	else if (isdigit(ch))
 	{ // symbol is a number.
@@ -178,7 +186,7 @@ void getsym(void)
 			while (tag)
 			{
 				getch();
-				if (cc == ll)//读完本行
+				if (cc == ll) //读完本行
 				{
 					tag = 0;
 					getch();
@@ -288,11 +296,21 @@ void enter(int kind)
 		mk = (mask *)&table[tx];
 		mk->level = level;
 		break;
-	case ID_ARRAY: /*********************/
-		/*code*/
-		break;
 	} // switch
 } // enter
+
+//////////////////////////////////////////////////////////////////////
+void enter_array()
+{
+	ax++;
+	array_table[ax] = mk_a;
+	enter(ID_VARIABLE);
+	array_table[ax].attr->address = tx;
+	for (int i = 0; i < array_table[ax].attr->sum - 1; i++)
+	{
+		enter(ID_VARIABLE);
+	}
+}
 
 //////////////////////////////////////////////////////////////////////
 // locates identifier in symbol table.
@@ -305,6 +323,17 @@ int position(char *id)
 		;
 	return i;
 } // position
+//////////////////////////////////////////////////////////////////////
+// 在数组表中定位id
+int array_position(char *id)
+{
+	int i;
+	strcpy(array_table[0].name, id);
+	i = ax + 1;
+	while (strcmp(array_table[--i].name, id) != 0)
+		;
+	return i;
+}
 
 //////////////////////////////////////////////////////////////////////
 void constdeclaration()
@@ -338,26 +367,44 @@ void constdeclaration()
 } // constdeclaration
 
 //////////////////////////////////////////////////////////////////////
-int dim; //声明数组的维度
-
 void dimDeclaration(void)
 {
-	dim++;
-	int i;
+	int value;
 	if (sym == SYM_IDENTIFIER || sym == SYM_NUMBER)
-	{ //如何enter 如何组织记录一个数组
+	{ //如何enter？如何组织记录一个数组？
+		//identifier必是const类型
+		int i;
+		if (sym == SYM_IDENTIFIER)
+		{
+			if (!(i = position(id)))
+			{
+				error(11); // Undeclared identifier.
+			}
+			else if (table[i].kind == ID_PROCEDURE)
+			{
+				error(26); // Illegal identifier.
+				i = 0;
+			}
 
-		/*
-		if (!(i = position(id)))
-		{
-			error(11); // Undeclared identifier.
+			value = table[i].value;
 		}
-		else if (table[i].kind == ID_PROCEDURE)
+		else
 		{
-			error(26); // Illegal assignment.
-			i = 0;
+			value = num;
 		}
-		*/
+	}
+	mk_a.attr->num[cur_dim++] = value;
+	getsym();
+	if (sym != SYM_RBRACK)
+		error(27); //expected ']'
+	else
+	{
+		getsym();
+		if (sym == SYM_LBRACK)
+		{
+			getsym();
+			dimDeclaration();
+		}
 	}
 }
 
@@ -367,14 +414,24 @@ void vardeclaration(void)
 	if (sym == SYM_IDENTIFIER)
 	{
 		getsym();
-		if (sym == SYM_LBRACK)
+		enter(ID_VARIABLE);
+	}
+	else if (sym == SYM_ARRAY)
+	{
+		cur_dim = 0;
+		mk_a.kind = ID_ARRAY;
+		strcpy(mk_a.name, id);
+		getsym();
+		dimDeclaration();
+		mk_a.attr->dim = cur_dim;
+		mk_a.attr->size[cur_dim - 1] = 1;
+		mk_a.attr->level = level;
+		for (int i = cur_dim - 1; i > 0; i--)
 		{
-			getsym();
-			dim = 0;
-			dimDeclaration();
+			mk_a.attr->size[i - 1] = mk_a.attr->size[i] * mk_a.attr->num[i];
 		}
-		else
-			enter(ID_VARIABLE);
+		mk_a.attr->sum = mk_a.attr->size[0] * mk_a.attr->num[0];
+		enter_array();
 	}
 	else
 	{
@@ -431,6 +488,50 @@ void factor(symset fsys)
 			}
 			getsym();
 		}
+		else if (sym == SYM_ARRAY)
+		{
+			cur_dim = 0;
+			if ((i = array_position(id)) == 0)
+			{
+				error(11); // Undeclared identifier.
+			}
+			else
+			{
+				getsym();
+				while (sym == SYM_NUMBER)
+				{
+					array_link[cur_dim++] = num;
+					getsym();
+					if (sym == SYM_RBRACK)
+					{
+						getsym();
+						if (sym == SYM_LBRACK)
+						{
+							getsym();
+						}
+						else
+						{
+							break;
+						}
+					}
+					else
+					{
+						error(27);
+					}
+				}
+			}
+			//错误处理缺省
+			mask *mk;
+			mask_array *mk_t;
+			mk_t = &array_table[i];
+			mk = (mask *)&table[mk_t->attr->address];
+			int addr = mk->address;
+			for (int i = 0; i < cur_dim; i++)
+			{
+				addr += array_link[i] * mk_t->attr->size[i];
+			}
+			gen(LOD, level - mk_t->attr->level, addr);
+		}
 		else if (sym == SYM_NUMBER)
 		{
 			if (num > MAXADDRESS)
@@ -461,6 +562,12 @@ void factor(symset fsys)
 			getsym();
 			factor(fsys);
 			gen(OPR, 0, OPR_NEG);
+		}
+		else if (sym == SYM_NOT)
+		{
+			getsym();
+			factor(fsys);
+			gen(OPR, 0, OPR_NOT);
 		}
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
 	} // if
@@ -529,12 +636,6 @@ void condition(symset fsys)
 		getsym();
 		expression(fsys);
 		gen(OPR, 0, OPR_ODD);
-	}
-	else if (sym == SYM_NOT)
-	{
-		getsym();
-		expression(fsys);
-		gen(OPR, 0, OPR_NOT);
 	}
 	else
 	{
@@ -612,7 +713,64 @@ void statement(symset fsys)
 		mk = (mask *)&table[i];
 		if (i)
 		{
-			gen(STO, level - mk->level, mk->address); //变量赋值语句翻译为STO 数组赋值翻译成什么？
+			gen(STO, level - mk->level, mk->address);
+		}
+	}
+	else if (sym == SYM_ARRAY)
+	{ //array assignment
+		cur_dim = 0;
+		mask *mk;
+		mask_array *mk_t;
+		if (!(i = array_position(id)))
+		{
+			error(11); // Undeclared identifier.
+		}
+		else
+		{
+			getsym();
+			while (sym == SYM_NUMBER)
+			{
+				array_link[cur_dim++] = num;
+				getsym();
+				if (sym == SYM_RBRACK)
+				{
+					getsym();
+					if (sym == SYM_LBRACK)
+					{
+						getsym();
+					}
+					else
+					{
+						break;
+					}
+				}
+				else
+				{
+					error(27);
+				}
+			}
+		}
+		mk_t = &array_table[i];
+		mk = (mask *)&table[mk_t->attr->address];
+		int addr = mk->address;
+		for (int i = 0; i < mk_t->attr->dim; i++)
+		{
+			addr += array_link[i] * mk_t->attr->size[i];
+		}
+
+		if (sym == SYM_BECOMES)
+		{
+			getsym();
+		}
+		else
+		{
+			error(13); // ':=' expected.
+		}
+
+		expression(fsys);
+		if (i)
+		{
+			gen(STO, level - mk_t->attr->level, addr);
 		}
 	}
 	else if (sym == SYM_CALL)
@@ -997,6 +1155,8 @@ void main()
 	int i;
 	symset set, set1, set2;
 
+	mk_a.attr = (attribute *)malloc(sizeof(attribute));
+
 	printf("Please input source file name: "); // get file name to be compiled
 	scanf("%s", s);
 	if ((infile = fopen(s, "r")) == NULL)
@@ -1011,7 +1171,7 @@ void main()
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
 	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
+	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_ARRAY, SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
 	ch = ' ';

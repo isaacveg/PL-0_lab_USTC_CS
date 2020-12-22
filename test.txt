@@ -1,6 +1,7 @@
-var i,j,k;
+var i,j,k[3][4];
 begin
 i := 1;//i = 1
-j := 0;
-if i && j then k := 1;
+j := i;/*j=0*/
+k[2][3] := 4;
+k[2][2] := k[2][3];
 end.

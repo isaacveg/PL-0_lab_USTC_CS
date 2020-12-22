@@ -6,6 +6,8 @@
 #define NSYM 9		 // maximum number of symbols in array ssym and csym
 #define MAXIDLEN 10	 // length of identifiers
 
+#define MAXDIM 10 //maximum dimension of array
+
 #define MAXADDRESS 32767 // maximum address
 #define MAXLEVEL 32		 // maximum depth of nesting block
 #define CXMAX 500		 // size of code array
@@ -50,7 +52,8 @@ enum symtype
 	SYM_OR,		// ||
 	SYM_NOT,	// !
 	SYM_LBRACK, // [
-	SYM_RBRACK	// ]
+	SYM_RBRACK, // ]
+	SYM_ARRAY	// array
 };
 
 enum idtype
@@ -130,7 +133,7 @@ char *err_msg[] =
 		/* 24 */ "The symbol can not be as the beginning of an expression.",
 		/* 25 */ "The number is too great.",
 		/* 26 */ "Procedure identifier can not be in an array declaration",
-		/* 27 */ "",
+		/* 27 */ "expected ']'",
 		/* 28 */ "",
 		/* 29 */ "",
 		/* 30 */ "",
@@ -149,6 +152,7 @@ int err;
 int cx; // index of current instruction to be generated.
 int level = 0;
 int tx = 0; //index of table
+int ax = 0; //index of array_table
 
 char line[80];
 
@@ -179,22 +183,49 @@ char *mnemonic[MAXINS] =
 	{
 		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC"};
 
-typedef struct //comtab与mask占用同样的内存空间
+typedef struct //数组附加属性
+{
+	int dim;		  //维度 a[3][4]的维度记为2
+	short address;	  //在符号表中的首地址
+	short level;	  //层次
+	int num[MAXDIM];  //记录声明时的数据，如a[3][4],num[0] = 3,num[1] = 4
+	int size[MAXDIM]; //记录对应维度规模的大小,如a[3][4],size[0] = 4,size[1] = 1;
+	int sum;		  //该数组总元素个数，max_index = num[0] * size[0];
+} attribute;
+// a[2][1]  address + 2 * 4 + 1 * 1 = address + 9
+/*
+1  2  3  4
+5  6  7  8
+9  10 11 12
+*/
+typedef struct //const使用
 {
 	char name[MAXIDLEN + 1];
 	int kind;
 	int value;
 } comtab;
 
-comtab table[TXMAX]; //符号表，通过enter添加条目，有const、variable、procedure、array四种类型，const使用comtab存储，其他三种使用mask
+comtab table[TXMAX]; //符号表，通过enter添加条目，有const、variable、procedure三种种类型
 
-typedef struct //mask与comtab占用同样的内存空间
+typedef struct //variable与procedure使用
 {
 	char name[MAXIDLEN + 1];
 	int kind;
 	short level;
-	short address;
+	short address;//栈中地址
 } mask;
+
+typedef struct mask_array //array使用
+{
+	char name[MAXIDLEN + 1];
+	int kind;
+	attribute *attr;
+} mask_array;
+
+mask_array mk_a;
+mask_array array_table[TXMAX]; //专门存放数组的符号表
+int cur_dim;
+int array_link[MAXDIM];
 
 FILE *infile;
 
