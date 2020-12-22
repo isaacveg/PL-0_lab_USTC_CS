@@ -18,6 +18,7 @@ enum symtype
 {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	SYM_NULL,
 	SYM_IDENTIFIER,
 	SYM_NUMBER,
@@ -52,6 +53,8 @@ enum symtype
 	SYM_OR,
 	SYM_NOT,
 =======
+=======
+>>>>>>> parent of f50d058... 代码格式化
 =======
 >>>>>>> parent of f50d058... 代码格式化
 	SYM_NULL,			//空
@@ -90,6 +93,9 @@ enum symtype
 	SYM_LBRACK,			//符号	[
 	SYM_RBRACK			//符号	]
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> parent of f50d058... 代码格式化
+=======
 >>>>>>> parent of f50d058... 代码格式化
 =======
 >>>>>>> parent of f50d058... 代码格式化
@@ -99,8 +105,11 @@ enum idtype
 {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ID_CONSTANT, ID_VARIABLE, ID_PROCEDURE
 =======
+=======
+>>>>>>> parent of f50d058... 代码格式化
 =======
 >>>>>>> parent of f50d058... 代码格式化
 	ID_CONSTANT,
@@ -108,6 +117,9 @@ enum idtype
 	ID_PROCEDURE,
 	ID_ARRAY
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> parent of f50d058... 代码格式化
+=======
 >>>>>>> parent of f50d058... 代码格式化
 =======
 >>>>>>> parent of f50d058... 代码格式化
