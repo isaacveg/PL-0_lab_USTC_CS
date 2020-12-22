@@ -41,22 +41,6 @@ void getch(void)
 			    && ((ch = getc(infile)) != '\n'))
 		{
 			printf("%c", ch);
-			if (ch == '/' && line[ll] == '/'){
-			    ll--;
-			    while ((ch = getc(infile)) != '\n') printf("%c",ch);
-                break;
-			} else if (ch == '*' && line[ll] == '/'){
-			    ll--;
-			    while (1){
-			        ch = getc(infile);
-			        printf("%c",ch);
-			        if (ch == '*' && (ch = getc(infile)) == '/'){
-			            printf("%c",ch);
-                        break;
-			        }
-			    }
-                continue;
-			}
 			line[++ll] = ch;
 		} // while
 		printf("\n");
