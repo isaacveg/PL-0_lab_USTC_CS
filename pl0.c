@@ -43,6 +43,9 @@ void getch(void)
 =======
 		while ((!feof(infile)) // added & modified by alex 01-02-09
 			   && ((ch = getc(infile)) != '\n'))
+<<<<<<< HEAD
+>>>>>>> parent of f50d058... 代码格式化
+=======
 >>>>>>> parent of f50d058... 代码格式化
 		{
 			printf("%c", ch);
@@ -343,7 +346,11 @@ void enter(int kind)
 		break;
 	case ID_VARIABLE:
 <<<<<<< HEAD
+<<<<<<< HEAD
 		mk = (mask*) &table[tx];
+=======
+		mk = (mask *)&table[tx];
+>>>>>>> parent of f50d058... 代码格式化
 =======
 		mk = (mask *)&table[tx];
 >>>>>>> parent of f50d058... 代码格式化
@@ -352,24 +359,35 @@ void enter(int kind)
 		break;
 	case ID_PROCEDURE:
 <<<<<<< HEAD
+<<<<<<< HEAD
 		mk = (mask*) &table[tx];
 		mk->level = level;
 		break;
 =======
+=======
+>>>>>>> parent of f50d058... 代码格式化
 		mk = (mask *)&table[tx];
 		mk->level = level;
 		break;
 	case ID_ARRAY: /*********************/
 		/*code*/
 		break;
+<<<<<<< HEAD
+>>>>>>> parent of f50d058... 代码格式化
+=======
 >>>>>>> parent of f50d058... 代码格式化
 	} // switch
 } // enter
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //////////////////////////////////////////////////////////////////////
 // locates identifier in symbol table.
 int position(char* id)
+=======
+//在符号表中查找标识符
+int position(char *id)
+>>>>>>> parent of f50d058... 代码格式化
 =======
 //在符号表中查找标识符
 int position(char *id)
@@ -442,6 +460,9 @@ void dimDeclaration(void)
 	}
 }
 
+<<<<<<< HEAD
+>>>>>>> parent of f50d058... 代码格式化
+=======
 >>>>>>> parent of f50d058... 代码格式化
 //////////////////////////////////////////////////////////////////////
 void vardeclaration(void)
@@ -460,6 +481,9 @@ void vardeclaration(void)
 		}
 		else
 			enter(ID_VARIABLE);
+<<<<<<< HEAD
+>>>>>>> parent of f50d058... 代码格式化
+=======
 >>>>>>> parent of f50d058... 代码格式化
 	}
 	else
@@ -473,7 +497,11 @@ void listcode(int from, int to)
 {
 	int i;
 <<<<<<< HEAD
+<<<<<<< HEAD
 	
+=======
+
+>>>>>>> parent of f50d058... 代码格式化
 =======
 
 >>>>>>> parent of f50d058... 代码格式化
@@ -512,7 +540,11 @@ void factor(symset fsys)
 					break;
 				case ID_VARIABLE:
 <<<<<<< HEAD
+<<<<<<< HEAD
 					mk = (mask*) &table[i];
+=======
+					mk = (mask *)&table[i];
+>>>>>>> parent of f50d058... 代码格式化
 =======
 					mk = (mask *)&table[i];
 >>>>>>> parent of f50d058... 代码格式化
@@ -680,9 +712,12 @@ void statement(symset fsys)
 	if (sym == SYM_IDENTIFIER)
 	{ // variable assignment
 <<<<<<< HEAD
+<<<<<<< HEAD
 		mask* mk;
 		if (! (i = position(id)))
 =======
+=======
+>>>>>>> parent of f50d058... 代码格式化
 		mask *mk;
 		if (!(i = position(id)))
 >>>>>>> parent of f50d058... 代码格式化
@@ -705,7 +740,11 @@ void statement(symset fsys)
 		}
 		expression(fsys);
 <<<<<<< HEAD
+<<<<<<< HEAD
 		mk = (mask*) &table[i];
+=======
+		mk = (mask *)&table[i];
+>>>>>>> parent of f50d058... 代码格式化
 =======
 		mk = (mask *)&table[i];
 >>>>>>> parent of f50d058... 代码格式化
@@ -730,8 +769,13 @@ void statement(symset fsys)
 			else if (table[i].kind == ID_PROCEDURE)
 			{
 <<<<<<< HEAD
+<<<<<<< HEAD
 				mask* mk;
 				mk = (mask*) &table[i];
+=======
+				mask *mk;
+				mk = (mask *)&table[i];
+>>>>>>> parent of f50d058... 代码格式化
 =======
 				mask *mk;
 				mk = (mask *)&table[i];
@@ -833,7 +877,11 @@ void block(symset fsys)
 	dx = 3;
 	block_dx = dx;
 <<<<<<< HEAD
+<<<<<<< HEAD
 	mk = (mask*) &table[tx];
+=======
+	mk = (mask *)&table[tx];
+>>>>>>> parent of f50d058... 代码格式化
 =======
 	mk = (mask *)&table[tx];
 >>>>>>> parent of f50d058... 代码格式化
