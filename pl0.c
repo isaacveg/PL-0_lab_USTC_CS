@@ -37,8 +37,13 @@ void getch(void)
 		}
 		ll = cc = 0;
 		printf("%5d  ", cx);
+<<<<<<< HEAD
 		while ( (!feof(infile)) // added & modified by alex 01-02-09
 			    && ((ch = getc(infile)) != '\n'))
+=======
+		while ((!feof(infile)) // added & modified by alex 01-02-09
+			   && ((ch = getc(infile)) != '\n'))
+>>>>>>> parent of f50d058... 代码格式化
 		{
 			printf("%c", ch);
 			line[++ll] = ch;
@@ -139,6 +144,7 @@ void getsym(void)
 	}
 	else if (ch == '&')
 	{
+<<<<<<< HEAD
         getch();
         if (ch == '&')
         {
@@ -161,6 +167,80 @@ void getsym(void)
         sym = SYM_NOT;
         getch();
     }
+=======
+		getch();
+		if (ch == '&')
+		{
+			sym = SYM_AND; // &&
+			getch();
+		}
+	}
+	else if (ch == '|')
+	{
+		getch();
+		if (ch == '|')
+		{
+			sym = SYM_OR; // ||
+			getch();
+		}
+	}
+	else if (ch == '!')
+	{
+		sym = SYM_NOT; //!
+		getch();
+	}
+	else if (ch == '[')
+	{
+		sym = SYM_LBRACK;
+		getch();
+	}
+	else if (ch == ']')
+	{
+		sym = SYM_RBRACK;
+		getch();
+	}
+	else if (ch == '/')
+	//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
+	{
+		getch();
+		if (ch == '/') // 读到"//"
+		{
+			int tag = 1;
+			while (tag)
+			{
+				getch();
+				if (cc == ll)//读完本行
+				{
+					tag = 0;
+					getch();
+				}
+			}
+			getsym();
+		}
+		else if (ch == '*') // 读到"/*"
+		{
+			int tag = 1;
+			while (tag)
+			{
+				getch();
+				if (ch == '*')
+				{
+					getch();
+					if (ch == '/') //读到"*/"
+					{
+						tag = 0;
+						getch();
+					}
+				}
+			}
+			getsym();
+		}
+		else
+		{
+			sym = SYM_SLASH;
+		}
+	}
+>>>>>>> parent of f50d058... 代码格式化
 	else
 	{ // other tokens
 		i = NSYM;
@@ -179,8 +259,39 @@ void getsym(void)
 	}
 } // getsym
 
+<<<<<<< HEAD
 //////////////////////////////////////////////////////////////////////
 // generates (assembles) an instruction.
+=======
+/*
+2.4 代码生成
+PL/0 编译程序不仅完成通常的词法分析、语法分析，而且还产生中间代码和
+“目标”代码。最终我们要“运行”该目标码。为了使我们的编译程序保持适当
+简单的水平，不致陷入与本课程无关的实际机器的特有性质的考虑中去，我们假
+想有台适合PL/0 程序运行的计算机，我们称之为PL/0 处理机。PL/0 处理机顺
+序解释生成的目标代码，我们称之为解释程序。注意：这里的假设与我们的编译
+概念并不矛盾，在本课程中我们写的只是一个示范性的编译程序，它的后端无法
+完整地实现，因而只能在一个解释性的环境下予以模拟。从另一个角度上讲，把
+解释程序就看成是PL/0 机硬件，把解释执行看成是PL/0 的硬件执行，那么我们
+所做的工作：由PL/0 源语言程序到PL/0 机器指令的变换，就是一个完整的编译
+程序。
+PL/0 处理机有两类存贮，目标代码放在一个固定的存贮数组code 中，而所
+需数据组织成一个栈形式存放。
+PL/0 处理机的指令集根据PL/0 语言的要求而设计，它包括以下的指令：
+（1）LIT 将常数置于栈顶 
+（2）LOD 将变量值置于栈顶 
+（3）STO 将栈顶的值赋与某变量 
+（4）CAL 用于过程调用的指令 
+（5）INT 在数据栈中分配存贮空间 
+（6）JMP, JPC  用于if, while 语句的条件或无条件控制转移指令
+（7）OPR 一组算术或逻辑运算指令
+*/
+
+/*
+生成中间代码
+把三个参数f、l、a 组装成一条目标指令并存放于code 数组中，增加CX 的值，CX 表示下一条即将生成的目标指令的地址。
+*/
+>>>>>>> parent of f50d058... 代码格式化
 void gen(int x, int y, int z)
 {
 	if (cx > CXMAX)
@@ -215,7 +326,7 @@ int dx;  // data allocation index
 // enter object(constant, variable or procedre) into table.
 void enter(int kind)
 {
-	mask* mk;
+	mask *mk;
 
 	tx++;
 	strcpy(table[tx].name, id);
@@ -231,20 +342,38 @@ void enter(int kind)
 		table[tx].value = num;
 		break;
 	case ID_VARIABLE:
+<<<<<<< HEAD
 		mk = (mask*) &table[tx];
+=======
+		mk = (mask *)&table[tx];
+>>>>>>> parent of f50d058... 代码格式化
 		mk->level = level;
 		mk->address = dx++;
 		break;
 	case ID_PROCEDURE:
+<<<<<<< HEAD
 		mk = (mask*) &table[tx];
 		mk->level = level;
 		break;
+=======
+		mk = (mask *)&table[tx];
+		mk->level = level;
+		break;
+	case ID_ARRAY: /*********************/
+		/*code*/
+		break;
+>>>>>>> parent of f50d058... 代码格式化
 	} // switch
 } // enter
 
+<<<<<<< HEAD
 //////////////////////////////////////////////////////////////////////
 // locates identifier in symbol table.
 int position(char* id)
+=======
+//在符号表中查找标识符
+int position(char *id)
+>>>>>>> parent of f50d058... 代码格式化
 {
 	int i;
 	strcpy(table[0].name, id);
@@ -278,10 +407,42 @@ void constdeclaration()
 		{
 			error(3); // There must be an '=' to follow the identifier.
 		}
+<<<<<<< HEAD
 	} else	error(4);
 	 // There must be an identifier to follow 'const', 'var', or 'procedure'.
 } // constdeclaration
 
+=======
+	}
+	else
+		error(4);
+	// There must be an identifier to follow 'const', 'var', or 'procedure'.
+}
+
+int dim;//声明数组的维度
+
+void dimDeclaration(void)
+{
+	dim++;
+	int i;
+	if (sym == SYM_IDENTIFIER || sym == SYM_NUMBER)
+	{ //如何enter 如何组织记录一个数组
+
+		/*
+		if (!(i = position(id)))
+		{
+			error(11); // Undeclared identifier.
+		}
+		else if (table[i].kind == ID_PROCEDURE)
+		{
+			error(26); // Illegal assignment.
+			i = 0;
+		}
+		*/
+	}
+}
+
+>>>>>>> parent of f50d058... 代码格式化
 //////////////////////////////////////////////////////////////////////
 void vardeclaration(void)
 {
@@ -289,6 +450,17 @@ void vardeclaration(void)
 	{
 		enter(ID_VARIABLE);
 		getsym();
+<<<<<<< HEAD
+=======
+		if (sym == SYM_LBRACK)
+		{
+			getsym();
+			dim = 0;
+			dimDeclaration();
+		}
+		else
+			enter(ID_VARIABLE);
+>>>>>>> parent of f50d058... 代码格式化
 	}
 	else
 	{
@@ -300,7 +472,11 @@ void vardeclaration(void)
 void listcode(int from, int to)
 {
 	int i;
+<<<<<<< HEAD
 	
+=======
+
+>>>>>>> parent of f50d058... 代码格式化
 	printf("\n");
 	for (i = from; i < to; i++)
 	{
@@ -330,12 +506,16 @@ void factor(symset fsys)
 			{
 				switch (table[i].kind)
 				{
-					mask* mk;
+					mask *mk;
 				case ID_CONSTANT:
 					gen(LIT, 0, table[i].value);
 					break;
 				case ID_VARIABLE:
+<<<<<<< HEAD
 					mk = (mask*) &table[i];
+=======
+					mk = (mask *)&table[i];
+>>>>>>> parent of f50d058... 代码格式化
 					gen(LOD, level - mk->level, mk->address);
 					break;
 				case ID_PROCEDURE:
@@ -499,8 +679,13 @@ void statement(symset fsys)
 
 	if (sym == SYM_IDENTIFIER)
 	{ // variable assignment
+<<<<<<< HEAD
 		mask* mk;
 		if (! (i = position(id)))
+=======
+		mask *mk;
+		if (!(i = position(id)))
+>>>>>>> parent of f50d058... 代码格式化
 		{
 			error(11); // Undeclared identifier.
 		}
@@ -519,7 +704,11 @@ void statement(symset fsys)
 			error(13); // ':=' expected.
 		}
 		expression(fsys);
+<<<<<<< HEAD
 		mk = (mask*) &table[i];
+=======
+		mk = (mask *)&table[i];
+>>>>>>> parent of f50d058... 代码格式化
 		if (i)
 		{
 			gen(STO, level - mk->level, mk->address);
@@ -540,8 +729,13 @@ void statement(symset fsys)
 			}
 			else if (table[i].kind == ID_PROCEDURE)
 			{
+<<<<<<< HEAD
 				mask* mk;
 				mk = (mask*) &table[i];
+=======
+				mask *mk;
+				mk = (mask *)&table[i];
+>>>>>>> parent of f50d058... 代码格式化
 				gen(CAL, level - mk->level, mk->address);
 			}
 			else
@@ -631,14 +825,18 @@ void statement(symset fsys)
 void block(symset fsys)
 {
 	int cx0; // initial code index
-	mask* mk;
+	mask *mk;
 	int block_dx;
 	int savedTx;
 	symset set1, set;
 
 	dx = 3;
 	block_dx = dx;
+<<<<<<< HEAD
 	mk = (mask*) &table[tx];
+=======
+	mk = (mask *)&table[tx];
+>>>>>>> parent of f50d058... 代码格式化
 	mk->address = cx;
 	gen(JMP, 0, 0);
 	if (level > MAXLEVEL)
@@ -900,7 +1098,7 @@ void interpret()
 //////////////////////////////////////////////////////////////////////
 void main ()
 {
-	FILE* hbin;
+	FILE *hbin;
 	char s[80];
 	int i;
 	symset set, set1, set2;
