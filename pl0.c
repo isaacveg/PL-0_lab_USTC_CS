@@ -454,8 +454,10 @@ void vardeclaration(void)
 			enter(ID_REFERENCE);
 			if (lastSymbol == SYM_ASSIGN)
 			{
+				int index = position(lastIdName);
+				qmask* t = (qmask*)table + index;
 				getsym();
-				/*code*/
+				t->index = position(lastIdName);
 			}
 		}
 		else
