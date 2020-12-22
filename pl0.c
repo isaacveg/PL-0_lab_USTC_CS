@@ -153,6 +153,30 @@ void getsym(void)
 			sym = SYM_LES;     // <
 		}
 	}
+	else if (ch == '&')
+	{
+        getch();
+        if (ch == '&')
+        {
+            sym = SYM_AND;     // &&
+            getch();
+        }
+
+	}
+	else if (ch == '|')
+    {
+        getch();
+        if (ch == '|')
+        {
+            sym = SYM_OR;     // &&
+            getch();
+        }
+    }
+    else if (ch == '!')
+    {
+        sym = SYM_NOT;
+        getch();
+    }
 	else
 	{ // other tokens
 		i = NSYM;
@@ -368,6 +392,12 @@ void factor(symset fsys)
 			 factor(fsys);
 			 gen(OPR, 0, OPR_NEG);
 		}
+        else if(sym == SYM_NOT) // NOT,  Expr -> '!' Expr
+        {
+            getsym();
+            factor(fsys);
+            gen(OPR, 0, OPR_NOT);
+        }
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
 	} // if
 } // factor
@@ -403,7 +433,7 @@ void expression(symset fsys)
 	int addop;
 	symset set;
 
-	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS, SYM_NULL));
+	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS, SYM_NULL, SYM_NOT));
 	
 	term(set);
 	while (sym == SYM_PLUS || sym == SYM_MINUS)
@@ -430,6 +460,7 @@ void condition(symset fsys)
 	int relop;
 	symset set;
 
+
 	if (sym == SYM_ODD)
 	{
 		getsym();
@@ -439,6 +470,7 @@ void condition(symset fsys)
 	else
 	{
 		set = uniteset(relset, fsys);
+		set = uniteset(set,createset(SYM_NOT));
 		expression(set);
 		destroyset(set);
 		if (! inset(sym, relset))
@@ -842,6 +874,9 @@ void interpret()
 				top--;
 				stack[top] = stack[top] <= stack[top + 1];
 				break;
+			case OPR_NOT:
+				stack[top] = !stack[top];
+                break;
 			} // switch
 			break;
 		case LOD:
@@ -900,7 +935,7 @@ void main ()
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
 	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
+	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT,SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
 	ch = ' ';
