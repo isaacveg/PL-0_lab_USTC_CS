@@ -1,21 +1,19 @@
 #include <stdio.h>
 
-#define NRW        11     // number of reserved words
-#define TXMAX      500    // length of identifier table
-#define MAXNUMLEN  14     // maximum number of digits in numbers
-#define NSYM       10     // maximum number of symbols in array ssym and csym
-#define MAXIDLEN   10     // length of identifiers
-
-#define MAXADDRESS 32767  // maximum address
-#define MAXLEVEL   32     // maximum depth of nesting block
-#define CXMAX      500    // size of code array
-
-#define MAXSYM     30     // maximum number of symbols  
-
-#define STACKSIZE  1000   // maximum storage
+#define NRW 11				//保留字数
+#define TXMAX 500			//标识符表的长度
+#define MAXNUMLEN 14		//数字的最大位数
+#define NSYM 9				//数组ssym和csym中的最大符号数
+#define MAXIDLEN 10			//标识符长度
+#define MAXADDRESS 32767	//最大地址
+#define MAXLEVEL 32			//嵌套块最大深度
+#define CXMAX 500			//代码数组的大小
+#define MAXSYM 30			//最大符号数
+#define STACKSIZE 1000		//最大存储量
 
 enum symtype
 {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -58,6 +56,9 @@ enum symtype
 =======
 >>>>>>> parent of f50d058... 代码格式化
 	SYM_NULL,			//空
+=======
+	SYM_NULL,			//NULL
+>>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 	SYM_IDENTIFIER,		//标识符
 	SYM_NUMBER,			//常数
 	SYM_PLUS,			//符号	+
@@ -91,6 +92,7 @@ enum symtype
 	SYM_OR,				//符号	||
 	SYM_NOT,			//符号	!
 	SYM_LBRACK,			//符号	[
+<<<<<<< HEAD
 	SYM_RBRACK			//符号	]
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -99,10 +101,16 @@ enum symtype
 >>>>>>> parent of f50d058... 代码格式化
 =======
 >>>>>>> parent of f50d058... 代码格式化
+=======
+	SYM_RBRACK,			//符号	]
+	SYM_QUOTE			//符号	&
+>>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 };
 
+//标识符的类型
 enum idtype
 {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -123,22 +131,48 @@ enum idtype
 >>>>>>> parent of f50d058... 代码格式化
 =======
 >>>>>>> parent of f50d058... 代码格式化
+=======
+	ID_CONSTANT,	//常数
+	ID_VARIABLE,	//变量
+	ID_PROCEDURE,	//过程
+	ID_ARRAY,		//数组
+	ID_REFERENCE	//引用
+>>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 };
 
 enum opcode
 {
-	LIT, OPR, LOD, STO, CAL, INT, JMP, JPC
+	LIT,	//将常数置于栈顶
+	OPR,	//一组算术或逻辑运算指令
+	LOD,	//将变量值置于栈顶
+	STO,	//将栈顶的值赋与某变量
+	CAL,	//用于过程调用的指令
+	INT,	//在数据栈中分配存贮空间
+	JMP,	//用于if, while 语句的条件或无条件控制转移指令
+	JPC		//一组算术或逻辑运算指令
 };
 
 enum oprcode
 {
-	OPR_RET, OPR_NEG, OPR_ADD, OPR_MIN,
-	OPR_MUL, OPR_DIV, OPR_ODD, OPR_EQU,
-	OPR_NEQ, OPR_LES, OPR_LEQ, OPR_GTR,
-	OPR_GEQ, OPR_NOT
+	OPR_RET,	//return
+	OPR_NEG,	//算术运算符	取负
+	OPR_ADD,	//算术运算符	加
+	OPR_MIN,	//算术运算符	减
+	OPR_MUL,	//算术运算符	乘
+	OPR_DIV,	//算术运算符	除
+	OPR_ODD,	//odd
+	OPR_EQU,	//逻辑运算符	等于
+	OPR_NEQ,	//逻辑运算符	不等于
+	OPR_LES,	//逻辑运算符	小于
+	OPR_LEQ,	//逻辑运算符	小于等于
+	OPR_GTR,	//逻辑运算符	大于
+	OPR_GEQ,	//逻辑运算符	大于等于
+	OPR_AND,	//逻辑运算符	与
+	OPR_OR,		//逻辑运算符	或
+	OPR_NOT,	//逻辑运算符	非
 };
 
-
+//三格式指令FLA
 typedef struct
 {
 	int f; // function code
@@ -146,9 +180,10 @@ typedef struct
 	int a; // displacement address
 } instruction;
 
-//////////////////////////////////////////////////////////////////////
+//错误信息库
 char* err_msg[] =
 {
+<<<<<<< HEAD
 <<<<<<< HEAD
 /*  0 */    "",
 /*  1 */    "Found ':=' when expecting '='.",
@@ -198,6 +233,8 @@ int  cx;         // index of current instruction to be generated.
 int  level = 0;
 int  tx = 0;
 =======
+=======
+>>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 	/*  0 */ "",
 	/*  1 */ "Found ':=' when expecting '='.",
 	/*  2 */ "There must be a number to follow '='.",
@@ -224,78 +261,93 @@ int  tx = 0;
 	/* 23 */ "The symbol can not be followed by a factor.",
 	/* 24 */ "The symbol can not be as the beginning of an expression.",
 	/* 25 */ "The number is too great.",
+<<<<<<< HEAD
 	/* 26 */ "Procedure identifier can not be in an array declaration",
 	/* 27 */ "",
+=======
+	/* 26 */ "Procedure identifier can not be in an array declaration.",
+	/* 27 */ "There must be an identifier to follow '&'.",
+>>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 	/* 28 */ "",
 	/* 29 */ "",
 	/* 30 */ "",
 	/* 31 */ "",
 	/* 32 */ "There are too many levels." };
 
+<<<<<<< HEAD
 char ch;			   //上次读取的字符
 int sym;			   //上次读取的符号
 char id[MAXIDLEN + 1]; //上次读取的标识符
 int num;			   //上次读取的数字
 int cc;				   //字符数
 int ll;				   //line length
+=======
+char ch;				//上次读取的字符
+int sym;				//上次读取的符号
+char id[MAXIDLEN + 1];	//上次读取的标识符
+int num;				//上次读取的数字
+int cc;					//字符数
+int ll;					//line length
+>>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 int kk;
 int err;
 int cx;					//要生成的当前指令的索引
 int level = 0;
 int tx = 0;				//符号表索引
+<<<<<<< HEAD
 >>>>>>> parent of f50d058... 代码格式化
+=======
+>>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 
 char line[80];
 
 instruction code[CXMAX];
 
+//关键字集合
 char* word[NRW + 1] =
 {
 	"", /* place holder */
-	"begin", "call", "const", "do", "end","if",
-	"odd", "procedure", "then", "var", "while"
-};
+	"begin", "call", "const", "do", "end", "if",
+	"odd", "procedure", "then", "var", "while" };
 
 int wsym[NRW + 1] =
 {
 	SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
-	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE
-};
+	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE };
 
 int ssym[NSYM + 1] =
 {
-	SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES, SYM_SLASH,
-	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON
-};
+	SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES,
+	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON };
 
 char csym[NSYM + 1] =
 {
-	' ', '+', '-', '*', '/', '(', ')', '=', ',', '.', ';'
-};
+	' ', '+', '-', '*', '(', ')', '=', ',', '.', ';' };
 
-#define MAXINS   8
+
+#define MAXINS 8	//PL0处理机指令集大小
+
+//PL0处理机指令字符串集
 char* mnemonic[MAXINS] =
 {
 	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC"
 };
 
-typedef struct
+typedef struct //comtab与mask占用同样的内存空间
 {
 	char name[MAXIDLEN + 1];
-	int  kind;
-	int  value;
-} comtab;
+	int kind;
+	int value;
+}comtab;
 
-comtab table[TXMAX];
+comtab table[TXMAX]; //符号表，通过enter添加条目，有const、variable、procedure、array四种类型，const使用comtab存储，其他三种使用mask
 
-typedef struct
+typedef struct //mask与comtab占用同样的内存空间
 {
-	char  name[MAXIDLEN + 1];
-	int   kind;
+	char name[MAXIDLEN + 1];
+	int kind;
 	short level;
 	short address;
 } mask;
 
 FILE* infile;
-
-// EOF PL0.h
