@@ -21,8 +21,8 @@ enum symtype
 	SYM_TIMES,			//符号	*
 	SYM_SLASH,			//符号	/
 	SYM_ODD,			//符号	odd
-	SYM_EQU,			//符号	=
-	SYM_NEQ,			//符号	<>
+	SYM_EQU,			//符号	==
+	SYM_NEQ,			//符号	!=
 	SYM_LES,			//符号	<
 	SYM_LEQ,			//符号	<=
 	SYM_GTR,			//符号	>
@@ -72,22 +72,22 @@ enum opcode
 
 enum oprcode
 {
-	OPR_RET,
-	OPR_NEG,
-	OPR_ADD,
-	OPR_MIN,
-	OPR_MUL,
-	OPR_DIV,
-	OPR_ODD,
-	OPR_EQU,
-	OPR_NEQ,
-	OPR_LES,
-	OPR_LEQ,
-	OPR_GTR,
-	OPR_GEQ,
-	OPR_AND, //&&
-	OPR_OR,	 //||
-	OPR_NOT, //!
+	OPR_RET,	//return
+	OPR_NEG,	//算术运算符	取负
+	OPR_ADD,	//算术运算符	加
+	OPR_MIN,	//算术运算符	减
+	OPR_MUL,	//算术运算符	乘
+	OPR_DIV,	//算术运算符	除
+	OPR_ODD,	//算术运算符	ODD
+	OPR_EQU,	//逻辑运算符	等于
+	OPR_NEQ,	//逻辑运算符	不等于
+	OPR_LES,	//逻辑运算符	小于
+	OPR_LEQ,	//逻辑运算符	小于等于
+	OPR_GTR,	//逻辑运算符	大于
+	OPR_GEQ,	//逻辑运算符	大于等于
+	OPR_AND,	//逻辑运算符	与
+	OPR_OR,		//逻辑运算符	或
+	OPR_NOT,	//逻辑运算符	非
 };
 
 typedef struct
@@ -135,22 +135,23 @@ char *err_msg[] =
 		/* 32 */ "There are too many levels."};
 
 //////////////////////////////////////////////////////////////////////
-char ch;			   // last character read
-int sym;			   // last symbol read
-char id[MAXIDLEN + 1]; // last identifier read
-int num;			   // last number read
-int cc;				   // character count
-int ll;				   // line length
+char ch;			   //上次读取的字符
+int sym;			   //上次读取的符号
+char id[MAXIDLEN + 1]; //上次读取的标识符
+int num;			   //上次读取的数字
+int cc;				   //字符数
+int ll;				   //line length
 int kk;
 int err;
-int cx; // index of current instruction to be generated.
+int cx;					//要生成的当前指令的索引
 int level = 0;
-int tx = 0; //index of table
+int tx = 0;				//符号表索引
 
 char line[80];
 
 instruction code[CXMAX];
 
+//关键字集合
 char *word[NRW + 1] =
 	{
 		"", /* place holder */
@@ -194,5 +195,3 @@ typedef struct //mask与comtab占用同样的内存空间
 } mask;
 
 FILE *infile;
-
-// EOF PL0.h
