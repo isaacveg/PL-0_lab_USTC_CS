@@ -623,7 +623,7 @@ void expression(symset fsys)
 	int addop;
 	symset set;
 
-	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS, SYM_NULL));
+	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS,SYM_NULL));
 
 	term(set);
 	while (sym == SYM_PLUS || sym == SYM_MINUS)
@@ -661,45 +661,75 @@ void condition(symset fsys)
 		set = uniteset(relset, fsys);
 		expression(set);
 		destroyset(set);
-		if (!inset(sym, relset))
+		if (inset(sym, relset))
 		{
-			error(20);
-		}
-		else
-		{
-			relop = sym;
-			getsym();
-			expression(fsys);
-			switch (relop)
-			{
-			case SYM_EQU:
-				gen(OPR, 0, OPR_EQU);
-				break;
-			case SYM_NEQ:
-				gen(OPR, 0, OPR_NEQ);
-				break;
-			case SYM_LES:
-				gen(OPR, 0, OPR_LES);
-				break;
-			case SYM_GEQ:
-				gen(OPR, 0, OPR_GEQ);
-				break;
-			case SYM_GTR:
-				gen(OPR, 0, OPR_GTR);
-				break;
-			case SYM_LEQ:
-				gen(OPR, 0, OPR_LEQ);
-				break;
-			case SYM_AND:
-				gen(OPR, 0, OPR_AND);
-				break;
-			case SYM_OR:
-				gen(OPR, 0, OPR_OR);
-				break;
-			} // switch
+            relop = sym;
+            getsym();
+            set = uniteset(relset, fsys);
+            expression(set);
+            destroyset(set);
+            switch (relop)
+            {
+                case SYM_EQU:
+                    gen(OPR, 0, OPR_EQU);
+                    break;
+                case SYM_NEQ:
+                    gen(OPR, 0, OPR_NEQ);
+                    break;
+                case SYM_LES:
+                    gen(OPR, 0, OPR_LES);
+                    break;
+                case SYM_GEQ:
+                    gen(OPR, 0, OPR_GEQ);
+                    break;
+                case SYM_GTR:
+                    gen(OPR, 0, OPR_GTR);
+                    break;
+                case SYM_LEQ:
+                    gen(OPR, 0, OPR_LEQ);
+                    break;
+		    }
+		 // switch
 		}	  // else
 	}		  // else
 } // condition
+
+//////////////////////////////////////////////////////////////////////
+void and_condition(symset fsys)
+{
+    symset set,set1;
+
+    set1 = createset(SYM_AND,SYM_NULL);
+    set = uniteset(set1, fsys);
+    condition(set);
+    while (sym == SYM_AND)
+    {
+        getsym();
+        condition(set);
+        gen(OPR,0,OPR_AND);
+    }
+    destroyset(set1);
+    destroyset(set);
+}
+
+
+//////////////////////////////////////////////////////////////////////
+void or_condition(symset fsys)
+{
+    symset set,set1;
+
+    set1 = createset(SYM_OR,SYM_NULL);
+    set = uniteset(set1, fsys);
+    and_condition(set);
+    while (sym == SYM_OR)
+    {
+        getsym();
+        and_condition(set);
+        gen(OPR,0,OPR_OR);
+    }
+    destroyset(set1);
+    destroyset(set);
+}
 
 //////////////////////////////////////////////////////////////////////
 void statement(symset fsys)
@@ -796,11 +826,21 @@ void statement(symset fsys)
 	else if (sym == SYM_IF)
 	{ // if statement
 		getsym();
-		set1 = createset(SYM_THEN, SYM_DO, SYM_NULL);
+
+		if (sym == SYM_LPAREN){
+		    getsym();
+		} else error(33);  //Missing '('.
+
+		set1 = createset(SYM_RPAREN, SYM_NULL);
 		set = uniteset(set1, fsys);
-		condition(set);
+		or_condition(set);
 		destroyset(set1);
 		destroyset(set);
+
+        if (sym == SYM_RPAREN){
+            getsym();
+        } else error(33);  //Missing ')'.
+
 		if (sym == SYM_THEN)
 		{
 			getsym();
@@ -1136,6 +1176,14 @@ void interpret()
 				top--;
 				stack[top] = stack[top] <= stack[top + 1];
 				break;
+			case OPR_AND:
+				top--;
+				stack[top] = stack[top] && stack[top + 1];
+				break;
+			case OPR_OR:
+				top--;
+				stack[top] = stack[top] || stack[top + 1];
+				break;
 			case OPR_NOT:
 				stack[top] = !stack[top];
 				break;
@@ -1211,7 +1259,7 @@ void main()
 	}
 
 	phi = createset(SYM_NULL);
-	relset = createset(SYM_EQU, SYM_NEQ, SYM_LES, SYM_LEQ, SYM_AND, SYM_OR, SYM_NOT, SYM_GTR, SYM_GEQ, SYM_NULL);
+	relset = createset(SYM_EQU, SYM_NEQ, SYM_LES, SYM_LEQ, SYM_GTR, SYM_GEQ, SYM_NULL);
 
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
