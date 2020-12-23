@@ -1,4 +1,0 @@
-var i;
-begin
-	i := !6;
-end.

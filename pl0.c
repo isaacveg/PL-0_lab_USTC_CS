@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "PL0.h"
 #include "set.c"
@@ -307,8 +308,9 @@ void enter_array()
 	lastArray.attr->sum = lastArray.attr->size[0] * lastArray.attr->num[0]; //计算sum
 
 	array_table[ax] = lastArray;
+	lastArray.attr = (attribute *)malloc(sizeof(attribute));
 	array_table[ax].attr->address = dx; //dx作为首地址
-	dx += lastArray.attr->sum;			//为数组开辟sum大小的空间
+	dx += array_table[ax].attr->sum;	//为数组开辟sum大小的空间
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -498,7 +500,7 @@ void factor(symset fsys)
 					mask_array *mk = &array_table[i];
 					curArray = array_table[i];
 					match_array_dim(fsys);
-					
+
 					gen(LDA, level - mk->attr->level, mk->attr->address);
 				}
 			}
@@ -566,27 +568,29 @@ void factor(symset fsys)
 		}
 		else if (sym == SYM_RDM)
 		{
-		    getsym();
-		    if (sym == SYM_LPAREN)
-		    {
-		        getsym();
-		    }
-		    else error(33);
-		    if (sym == SYM_RPAREN)
-		    {
-		        getsym();
-		        gen(RDM,0,0);
-		    }
-		    else if (sym == SYM_NUMBER)
-		    {
-		        getsym();
-		        if (sym == SYM_RPAREN)
-		        {
-		            gen(RDM,0,num);
-		            getsym();
-		        }
-		        else error(22);
-		    }
+			getsym();
+			if (sym == SYM_LPAREN)
+			{
+				getsym();
+			}
+			else
+				error(33);
+			if (sym == SYM_RPAREN)
+			{
+				getsym();
+				gen(RDM, 0, 0);
+			}
+			else if (sym == SYM_NUMBER)
+			{
+				getsym();
+				if (sym == SYM_RPAREN)
+				{
+					gen(RDM, 0, num);
+					getsym();
+				}
+				else
+					error(22);
+			}
 		}
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
 	} // if
@@ -1226,8 +1230,8 @@ void interpret()
 			break;
 		case RDM:
 		    if (i.a == 0)
-		        stack[++top] = random();
-		    else stack[++top] = random() % i.a;
+		        stack[++top] = rand();
+		    else stack[++top] = rand() % i.a;
             break;
 		case PRT:
 			if (i.a == 0)
@@ -1247,6 +1251,8 @@ void main()
 	char s[80];
 	int i;
 	symset set, set1, set2;
+
+	srand((unsigned)time(0));
 
 	lastArray.attr = (attribute *)malloc(sizeof(attribute));
 

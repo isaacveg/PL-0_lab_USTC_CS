@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-#define NRW 13		 // number of reserved words
+#define NRW 15		 // number of reserved words
 #define TXMAX 500	 // length of identifier table
 #define MAXNUMLEN 14 // maximum number of digits in numbers
-#define NSYM 13		 // maximum number of symbols in array ssym and csym
+#define NSYM 10		 // maximum number of symbols in array ssym and csym
 #define MAXIDLEN 10	 // length of identifiers
 
 #define MAXDIM 10 //maximum dimension of array
@@ -12,7 +12,7 @@
 #define MAXLEVEL 32		 // maximum depth of nesting block
 #define CXMAX 500		 // size of code array
 
-#define MAXSYM 36 // maximum number of symbols
+#define MAXSYM 39 // maximum number of symbols
 
 #define STACKSIZE 1000 // maximum storage
 
@@ -53,8 +53,10 @@ enum symtype
 	SYM_NOT,	// !
 	SYM_LBRACK, // [
 	SYM_RBRACK, // ]
-	SYM_RDM,
-	SYM_PRT
+	SYM_GOTO,	//goto
+	SYM_ELSE,	// else
+	SYM_RDM,	//random
+	SYM_PRT		//print
 };
 
 enum idtype
@@ -77,7 +79,7 @@ enum opcode
 	JPC,
 	LDA,
 	STA,
-	RDM,     //random
+	RDM, //random
 	PRT
 };
 
@@ -144,8 +146,7 @@ char *err_msg[] =
 		/* 30 */ "",
 		/* 31 */ "",
 		/* 32 */ "There are too many levels.",
-	    /* 33 */ "Missing '('."
-	};
+		/* 33 */ "Missing '('."};
 
 //////////////////////////////////////////////////////////////////////
 char ch;			   // last character read
@@ -169,12 +170,14 @@ char *word[NRW + 1] =
 	{
 		"", /* place holder */
 		"begin", "call", "const", "do", "end", "if",
-		"odd", "procedure", "then", "var", "while", "random", "print"};
+		"odd", "procedure", "then", "var", "while", "goto", "else",
+		"random", "print"};
 
 int wsym[NRW + 1] =
 	{
 		SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
-		SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_RDM, SYM_PRT};
+		SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_GOTO, SYM_ELSE,
+		SYM_RDM, SYM_PRT};
 
 int ssym[NSYM + 1] =
 	{
