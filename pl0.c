@@ -690,12 +690,6 @@ void condition(symset fsys)
 			case SYM_LEQ:
 				gen(OPR, 0, OPR_LEQ);
 				break;
-			case SYM_AND:
-				gen(OPR, 0, OPR_AND);
-				break;
-			case SYM_OR:
-				gen(OPR, 0, OPR_OR);
-				break;
 			} // switch
 		}	  // else
 	}		  // else
