@@ -12,7 +12,7 @@
 #define MAXLEVEL 32		 // maximum depth of nesting block
 #define CXMAX 500		 // size of code array
 
-#define MAXSYM 39 // maximum number of symbols
+#define MAXSYM 40 // maximum number of symbols
 
 #define STACKSIZE 1000 // maximum storage
 
@@ -53,10 +53,11 @@ enum symtype
 	SYM_NOT,	// !
 	SYM_LBRACK, // [
 	SYM_RBRACK, // ]
-	SYM_GOTO,	//goto
+	SYM_GOTO,	// goto
 	SYM_ELSE,	// else
-	SYM_RDM,	//random
-	SYM_PRT		//print
+	SYM_RDM,	// random
+	SYM_PRT,	// print
+	SYM_COLON	// :
 };
 
 enum idtype
@@ -139,14 +140,19 @@ char *err_msg[] =
 		/* 23 */ "The symbol can not be followed by a factor.",
 		/* 24 */ "The symbol can not be as the beginning of an expression.",
 		/* 25 */ "The number is too great.",
-		/* 26 */ "Procedure identifier can not be in an array declaration",
-		/* 27 */ "expected ']'",
-		/* 28 */ "expected a constant or a number",
+		/* 26 */ "Procedure identifier can not be in an array declaration.",
+		/* 27 */ "expected ']'.",
+		/* 28 */ "expected a constant or a number.",
 		/* 29 */ "",
 		/* 30 */ "",
 		/* 31 */ "",
 		/* 32 */ "There are too many levels.",
-		/* 33 */ "Missing '('."};
+		/* 33 */ "Missing '('.",
+		/* 34 */ "the same lable has been used.",
+		/* 35 */ "too many lables.",
+		/* 36 */ "Missing ';'.",
+		/* 37 */ "too many goto.",
+		/* 38 */ "goto undifined lable."};
 
 //////////////////////////////////////////////////////////////////////
 char ch;			   // last character read
@@ -181,8 +187,8 @@ int wsym[NRW + 1] =
 
 int ssym[NSYM + 1] =
 	{
-		SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES,
-		SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON};
+		SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES, SYM_LPAREN,
+		SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON};
 
 char csym[NSYM + 1] =
 	{
@@ -240,5 +246,16 @@ int cur_dim;
 int array_link[MAXDIM];
 
 FILE *infile;
+
+#define NLABLE 20					   //lable的最大数量
+#define NGOTO 20					   //goto的最大数量
+char goto_dest[NGOTO + 1][MAXIDLEN];   //记录每个goto的目标
+int goto_cx[NGOTO + 1];				   //记录每个goto所在位置是第几条指令
+int goto_num;						   //记录goto的总数量
+char lable_name[NLABLE + 1][MAXIDLEN]; //记录每个lable的名字
+int lable_cx[NLABLE + 1];			   //记录每个lable所在位置是第几条指令
+int lable_num;						   //记录lable的总数量
+//由于分析goto时，lable不一定已经分析过，因此无法立即生成指令
+//采取回填策略，在分析结束、执行之前，对goto产生的jmp指令的目标进行统一回填
 
 // EOF PL0.h
