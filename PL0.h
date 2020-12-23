@@ -64,7 +64,7 @@ enum idtype
 };
 
 enum opcode
-{
+{ //增加LDA和STA用于数组，
 	LIT,
 	OPR,
 	LOD,
@@ -72,7 +72,9 @@ enum opcode
 	CAL,
 	INT,
 	JMP,
-	JPC
+	JPC,
+	LDA,
+	STA
 };
 
 enum oprcode
@@ -177,15 +179,15 @@ char csym[NSYM + 1] =
 	{
 		' ', '+', '-', '*', '(', ')', '=', ',', '.', ';'};
 
-#define MAXINS 8
+#define MAXINS 10 //增加LDA和STA用于数组，
 char *mnemonic[MAXINS] =
 	{
-		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC"};
+		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA"};
 
 typedef struct //数组附加属性
 {
 	int dim;		  //维度 a[3][4]的维度记为2
-	short address;	  //在符号表中的首地址
+	short address;	  //在栈中的首地址
 	short level;	  //层次
 	int num[MAXDIM];  //记录声明时的数据，如a[3][4],num[0] = 3,num[1] = 4
 	int size[MAXDIM]; //记录对应维度规模的大小,如a[3][4],size[0] = 4,size[1] = 1;
@@ -197,6 +199,7 @@ typedef struct //数组附加属性
 5  6  7  8
 9  10 11 12
 */
+
 typedef struct //const使用
 {
 	char name[MAXIDLEN + 1];
@@ -221,7 +224,8 @@ typedef struct mask_array //array使用
 	attribute *attr;
 } mask_array;
 
-mask_array lastArray;		   //最后读到的数组
+mask_array lastArray;		   //最后读到的数组声明
+mask_array curArray;		   //当前正在分析的数组
 mask_array array_table[TXMAX]; //专门存放数组的符号表
 int cur_dim;
 int array_link[MAXDIM];

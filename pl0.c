@@ -10,6 +10,7 @@
 #include "PL0.h"
 #include "set.c"
 
+void expression(symset fsys);
 //////////////////////////////////////////////////////////////////////
 // print error message.
 void error(int n)
@@ -307,7 +308,7 @@ void enter_array()
 
 	array_table[ax] = lastArray;
 	array_table[ax].attr->address = dx; //dx作为首地址
-	dx += lastArray.attr->sum;				//为数组开辟sum大小的空间
+	dx += lastArray.attr->sum;			//为数组开辟sum大小的空间
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -454,6 +455,25 @@ void listcode(int from, int to)
 } // listcode
 
 //////////////////////////////////////////////////////////////////////
+void match_array_dim(symset fsys)
+{ //匹配数组的维度信息，并将偏移量置于栈顶
+	symset set;
+	cur_dim = 0;
+	gen(LIT, 0, 0);
+	while (sym == SYM_LBRACK)
+	{
+		cur_dim++;
+		getsym();
+		set = uniteset(createset(SYM_RBRACK, SYM_NULL), fsys);
+		expression(set);
+		destroyset(set);
+		getsym();
+		gen(LIT, 0, curArray.attr->size[cur_dim - 1]);
+		gen(OPR, 0, OPR_MUL);
+		gen(OPR, 0, OPR_ADD);
+	}
+}
+
 void factor(symset fsys)
 {
 	void expression(symset fsys);
@@ -469,24 +489,18 @@ void factor(symset fsys)
 			getsym();
 			if (sym == SYM_LBRACK)
 			{ // array
-				mask_array *mk;
-				cur_dim = 0;
 				if (!(i = array_position(id)))
 				{
 					error(11); // Undeclared identifier.
 				}
 				else
 				{
-					dimDeclaration();
+					mask_array *mk = &array_table[i];
+					curArray = array_table[i];
+					match_array_dim(fsys);
+					
+					gen(LDA, level - mk->attr->level, mk->attr->address);
 				}
-				mk = &array_table[i];
-				int addr = mk->attr->address; //基址
-
-				for (int i = 0; i < mk->attr->dim; i++)
-				{
-					addr += lastArray.attr->num[i] * mk->attr->size[i]; //加上偏移量
-				}
-				gen(LOD, level - mk->attr->level, addr);
 			}
 			else
 			{ // variable
@@ -675,24 +689,30 @@ void statement(symset fsys)
 		getsym();
 		if (sym == SYM_LBRACK)
 		{ // array assignment
-			mask_array *mk;
-			cur_dim = 0;
 			if (!(i = array_position(id)))
 			{
 				error(11); // Undeclared identifier.
 			}
+
+			mask_array *mk = &array_table[i];
+			curArray = array_table[i];
+			match_array_dim(fsys);
+
+			if (sym == SYM_BECOMES)
+			{
+				getsym();
+			}
 			else
 			{
-				dimDeclaration();
+				error(13); // ':=' expected.
 			}
-			mk = &array_table[i];
-			cur_lever = mk->attr->level; //层次
-			addr = mk->attr->address;	 //基址
 
-			for (int i = 0; i < mk->attr->dim; i++)
-			{
-				addr += lastArray.attr->num[i] * mk->attr->size[i]; //加上偏移量
-			}
+			set = uniteset(createset(SYM_RBRACK, SYM_NULL), fsys);
+			expression(fsys);
+			destroyset(set);
+
+			if (i)
+				gen(STA, level - mk->attr->level, mk->attr->address);
 		}
 		else
 		{ // variable assignment
@@ -707,24 +727,20 @@ void statement(symset fsys)
 				i = 0;
 			}
 			mk = (mask *)&table[i];
-			cur_lever = mk->level; //层次
-			addr = mk->address;	   //地址
-		}
 
-		if (sym == SYM_BECOMES)
-		{
-			getsym();
-		}
-		else
-		{
-			error(13); // ':=' expected.
-		}
+			if (sym == SYM_BECOMES)
+			{
+				getsym();
+			}
+			else
+			{
+				error(13); // ':=' expected.
+			}
 
-		expression(fsys);
+			expression(fsys);
 
-		if (i)
-		{
-			gen(STO, level - cur_lever, addr);
+			if (i)
+				gen(STO, level - mk->level, mk->address);
 		}
 	}
 	else if (sym == SYM_CALL)
@@ -1071,10 +1087,18 @@ void interpret()
 		case LOD:
 			stack[++top] = stack[base(stack, b, i.l) + i.a];
 			break;
+		case LDA:
+			stack[top] = stack[base(stack, b, i.l) + stack[top] + i.a];
+			break;
 		case STO:
 			stack[base(stack, b, i.l) + i.a] = stack[top];
 			printf("%d\n", stack[top]);
 			top--;
+			break;
+		case STA:
+			stack[base(stack, b, i.l) + stack[top - 1] + i.a] = stack[top];
+			printf("%d\n", stack[top]);
+			top = top - 2; //此处存疑
 			break;
 		case CAL:
 			stack[top + 1] = base(stack, b, i.l);
