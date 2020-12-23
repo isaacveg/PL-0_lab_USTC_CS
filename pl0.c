@@ -10,12 +10,11 @@
 void error(int n)
 {
 	int i;
-
 	printf("      ");
 	for (i = 1; i <= characterCount - 1; i++)
 		printf(" ");
 	printf("^\n");
-	printf("Error %3d: %s\n", n, err_msg[n]);
+	printf("Error %3d: %s\n", n, errorMessage[n]);
 	errorCount++;
 }
 
@@ -70,7 +69,8 @@ void getsym(void)
 		getch();
 
 	if (isalpha(lastCharacter))
-	{ // symbol is a reserved word or an identifier.
+	{ 
+		//symbol is a reserved word or an identifier.
 		k = 0;
 		do
 		{
@@ -82,15 +82,15 @@ void getsym(void)
 		strcpy(lastIdName, a);
 		word[0] = lastIdName;
 		i = NRW;
-		while (strcmp(lastIdName, word[i--]))
-			;
+		while (strcmp(lastIdName, word[i--]));
 		if (++i)
-			lastSymbol = wsym[i]; // symbol is a reserved word
+			lastSymbol = wsym[i];	 //symbol is a reserved word
 		else
-			lastSymbol = SYM_IDENTIFIER; // symbol is an identifier
+			lastSymbol = SYM_IDENTIFIER;	//symbol is an identifier
 	}
 	else if (isdigit(lastCharacter))
-	{ // symbol is a number.
+	{ 
+		//symbol is a number.
 		k = lastNumber = 0;
 		lastSymbol = SYM_NUMBER;
 		do
@@ -155,10 +155,7 @@ void getsym(void)
 			getch();
 		}
 		else
-		{
 			lastSymbol = SYM_QUOTE; //&
-			getch();
-		}
 	}
 	else if (lastCharacter == '|')
 	{
@@ -221,9 +218,7 @@ void getsym(void)
 			getsym();
 		}
 		else
-		{
 			lastSymbol = SYM_SLASH;
-		}
 	}
 	else if (lastCharacter == '=')
 	{
@@ -231,7 +226,8 @@ void getsym(void)
 		getch();
 	}
 	else
-	{ // other tokens
+	{
+		// other tokens
 		i = NSYM;
 		csym[0] = lastCharacter;
 		while (csym[i--] != lastCharacter)
@@ -330,6 +326,7 @@ int dx; //数据分配索引
 void enter(int kind)
 {
 	mask* mk;
+	qmask* qmk;
 
 	tabIndex++;
 	strcpy(table[tabIndex].name, lastIdName);
@@ -353,13 +350,17 @@ void enter(int kind)
 		mk = (mask*)& table[tabIndex];
 		mk->level = currentLevel;
 		break;
-	case ID_ARRAY: /*********************/
-		/*code*/
+	case ID_ARRAY:
+		if (position(lastIdName) > 0)
+		{
+			mk = (mask*)& table[tabIndex];
+			mk->level = currentLevel;
+			mk->address = dx++;
+		}
 		break;
 	case ID_REFERENCE:
-		mk = (qmask*)& table[tabIndex];
-		mk->level = currentLevel;
-		mk->address = dx++;
+		qmk = (qmask*)& table[tabIndex];
+		qmk->level = currentLevel;
 		break;
 	}
 }
@@ -370,13 +371,12 @@ int position(char* id)
 	int i;
 	strcpy(table[0].name, id);
 	i = tabIndex + 1;
-	while (strcmp(table[--i].name, id) != 0)
-		;
+	while (strcmp(table[--i].name, id) != 0);
 	return i;
 }
 
 //常数声明
-void constdeclaration()
+void constDeclaration()
 {
 	if (lastSymbol == SYM_IDENTIFIER)
 	{
@@ -392,26 +392,19 @@ void constdeclaration()
 				getsym();
 			}
 			else
-			{
 				error(2); // There must be a number to follow '='.
-			}
 		}
 		else
-		{
 			error(3); // There must be an '=' to follow the identifier.
-		}
 	}
 	else
 		error(4);
 	// There must be an identifier to follow 'const', 'var', or 'procedure'.
 }
 
-int dim;//声明数组的维度
-
 //数组声明
 void dimDeclaration(void)
 {
-	dim++;
 	int i;
 	if (lastSymbol == SYM_IDENTIFIER || lastSymbol == SYM_NUMBER)
 	{ //如何enter 如何组织记录一个数组
@@ -431,30 +424,31 @@ void dimDeclaration(void)
 }
 
 //变量声明
-void vardeclaration(void)
+void varDeclaration(void)
 {
 	if (lastSymbol == SYM_IDENTIFIER)
 	{
+		//值类型
 		getsym();
 		if (lastSymbol == SYM_LBRACK)
-		{
-			getsym();
-			dim = 0;
 			dimDeclaration();
-		}
 		else
 			enter(ID_VARIABLE);
 	}
 	else if (lastSymbol == SYM_QUOTE)
 	{
+		//引用类型
 		getsym();
 		if (lastSymbol == SYM_IDENTIFIER)
 		{
-			getsym();
 			enter(ID_REFERENCE);
+			getsym();
 			if (lastSymbol == SYM_ASSIGN)
 			{
 				int index = position(lastIdName);
+				getsym();
+				if (index == 0)
+					error(11);	//Undeclared identifier.
 				qmask* t = (qmask*)table + index;
 				getsym();
 				t->index = position(lastIdName);
@@ -464,9 +458,7 @@ void vardeclaration(void)
 			error(27);	//There must be an identifier to follow '&'.
 	}
 	else
-	{
 		error(4);	//There must be an identifier to follow 'const', 'var', or 'procedure'.
-	}
 }
 
 /*
@@ -500,14 +492,12 @@ void factor(symset fsys)
 		if (lastSymbol == SYM_IDENTIFIER)
 		{
 			if ((i = position(lastIdName)) == 0)
-			{
 				error(11); // Undeclared identifier.
-			}
 			else
-			{
 				switch (table[i].kind)
 				{
 					mask* mk;
+					qmask* qmk;
 				case ID_CONSTANT:
 					gen(LIT, 0, table[i].value);
 					break;
@@ -518,8 +508,12 @@ void factor(symset fsys)
 				case ID_PROCEDURE:
 					error(21); // Procedure identifier can not be in an expression.
 					break;
-				} // switch
-			}
+				case ID_REFERENCE:
+					qmk = (qmask*)& table[i];
+					mk = (mask*)table + qmk->index;
+					gen(LOD, currentLevel - mk->level, mk->address);
+					break;
+				}
 			getsym();
 		}
 		else if (lastSymbol == SYM_NUMBER)
@@ -539,13 +533,9 @@ void factor(symset fsys)
 			expression(set);
 			destroyset(set);
 			if (lastSymbol == SYM_RPAREN)
-			{
 				getsym();
-			}
 			else
-			{
 				error(22); // Missing ')'.
-			}
 		}
 		else if (lastSymbol == SYM_MINUS) // UMINUS,  Expr -> '-' Expr
 		{
@@ -683,22 +673,18 @@ void statement(symset fsys)
 		mask* mk;
 		if (!(i = position(lastIdName)))
 		{
-			error(11); // Undeclared identifier.
+			error(11);	 //Undeclared identifier.
 		}
 		else if (table[i].kind != ID_VARIABLE)
 		{
-			error(12); // Illegal assignment.
+			error(12);	//Illegal assignment.
 			i = 0;
 		}
 		getsym();
 		if (lastSymbol == SYM_BECOMES)
-		{
 			getsym();
-		}
 		else
-		{
-			error(13); // ':=' expected.
-		}
+			error(13);	//':=' expected.
 		expression(fsys);
 		mk = (mask*)& table[i];
 		if (i)
@@ -707,7 +693,8 @@ void statement(symset fsys)
 		}
 	}
 	else if (lastSymbol == SYM_CALL)
-	{ // procedure call
+	{ 
+		// procedure call
 		getsym();
 		if (lastSymbol != SYM_IDENTIFIER)
 		{
@@ -733,7 +720,8 @@ void statement(symset fsys)
 		}
 	}
 	else if (lastSymbol == SYM_IF)
-	{ // if statement
+	{ 
+		// if statement
 		getsym();
 		set1 = createset(SYM_THEN, SYM_DO, SYM_NULL);
 		set = uniteset(set1, fsys);
@@ -741,20 +729,17 @@ void statement(symset fsys)
 		destroyset(set1);
 		destroyset(set);
 		if (lastSymbol == SYM_THEN)
-		{
 			getsym();
-		}
 		else
-		{
-			error(16); // 'then' expected.
-		}
+			error(16);	//'then' expected.
 		cx1 = currentInstructionIndex;
 		gen(JPC, 0, 0);
 		statement(fsys);
 		code[cx1].a = currentInstructionIndex;
 	}
 	else if (lastSymbol == SYM_BEGIN)
-	{ // block
+	{ 
+		// block
 		getsym();
 		set1 = createset(SYM_SEMICOLON, SYM_END, SYM_NULL);
 		set = uniteset(set1, fsys);
@@ -762,28 +747,21 @@ void statement(symset fsys)
 		while (lastSymbol == SYM_SEMICOLON || inset(lastSymbol, statbegsys))
 		{
 			if (lastSymbol == SYM_SEMICOLON)
-			{
 				getsym();
-			}
 			else
-			{
 				error(10);
-			}
 			statement(set);
-		} // while
+		}
 		destroyset(set1);
 		destroyset(set);
 		if (lastSymbol == SYM_END)
-		{
 			getsym();
-		}
 		else
-		{
-			error(17); // ';' or 'end' expected.
-		}
+			error(17);	//';' or 'end' expected.
 	}
 	else if (lastSymbol == SYM_WHILE)
-	{ // while statement
+	{ 
+		// while statement
 		cx1 = currentInstructionIndex;
 		getsym();
 		set1 = createset(SYM_DO, SYM_NULL);
@@ -799,7 +777,7 @@ void statement(symset fsys)
 		}
 		else
 		{
-			error(18); // 'do' expected.
+			error(18);	//'do' expected.
 		}
 		statement(fsys);
 		gen(JMP, 0, cx1);
@@ -811,7 +789,7 @@ void statement(symset fsys)
 //程序体
 void block(symset fsys)
 {
-	int cx0; // initial code index
+	int codeIndex;
 	mask* mk;
 	int block_dx;
 	int savedTx;
@@ -829,51 +807,46 @@ void block(symset fsys)
 	do
 	{
 		if (lastSymbol == SYM_CONST)
-		{ // constant declarations
+		{ 
+			//constant declarations
 			getsym();
 			do
 			{
-				constdeclaration();
+				constDeclaration();
 				while (lastSymbol == SYM_COMMA)
 				{
 					getsym();
-					constdeclaration();
+					constDeclaration();
 				}
 				if (lastSymbol == SYM_SEMICOLON)
-				{
 					getsym();
-				}
 				else
-				{
 					error(5); // Missing ',' or ';'.
-				}
 			} while (lastSymbol == SYM_IDENTIFIER);
-		} // if
+		}
 
 		if (lastSymbol == SYM_VAR)
-		{ // variable declarations
+		{ 
+			//variable declarations
 			getsym();
 			do
 			{
-				vardeclaration();
-				while (lastSymbol == SYM_COMMA) //读到','
+				varDeclaration();
+				while (lastSymbol == SYM_COMMA)		//读到','
 				{
 					getsym();
-					vardeclaration();
+					varDeclaration();
 				}
-				if (lastSymbol == SYM_SEMICOLON) //读到';'
-				{
+				if (lastSymbol == SYM_SEMICOLON)	//读到';'
 					getsym();
-				}
 				else
-				{
-					error(5); // Missing ',' or ';'.
-				}
+					error(5);	//Missing ',' or ';'.
 			} while (lastSymbol == SYM_IDENTIFIER);
-		}			   // if
+		}
 		block_dx = dx; //save dx before handling procedure call!
 		while (lastSymbol == SYM_PROCEDURE)
-		{ // procedure declarations
+		{
+			//procedure declarations
 			getsym();
 			if (lastSymbol == SYM_IDENTIFIER)
 			{
@@ -881,18 +854,11 @@ void block(symset fsys)
 				getsym();
 			}
 			else
-			{
-				error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
-			}
-
+				error(4);	//There must be an identifier to follow 'const', 'var', or 'procedure'.
 			if (lastSymbol == SYM_SEMICOLON)
-			{
 				getsym();
-			}
 			else
-			{
-				error(5); // Missing ',' or ';'.
-			}
+				error(5);	//Missing ',' or ';'.
 
 			currentLevel++;
 			savedTx = tabIndex;
@@ -928,7 +894,7 @@ void block(symset fsys)
 
 	code[mk->address].a = currentInstructionIndex;
 	mk->address = currentInstructionIndex;
-	cx0 = currentInstructionIndex;
+	codeIndex = currentInstructionIndex;
 	gen(INT, 0, block_dx);
 	set1 = createset(SYM_SEMICOLON, SYM_END, SYM_NULL);
 	set = uniteset(set1, fsys);
@@ -937,7 +903,7 @@ void block(symset fsys)
 	destroyset(set);
 	gen(OPR, 0, OPR_RET); // return
 	test(fsys, phi, 8);	  // test for error: Follow the statement is an incorrect symbol.
-	listcode(cx0, currentInstructionIndex);
+	listcode(codeIndex, currentInstructionIndex);
 }
 
 /*

@@ -19,7 +19,7 @@ enum symtype
 	SYM_MINUS,			//符号	-
 	SYM_TIMES,			//符号	*
 	SYM_SLASH,			//符号	/
-	SYM_ODD,			//符号	odd
+	SYM_ODD,			//符号	odd（判定奇偶性）
 	SYM_EQU,			//符号	==
 	SYM_NEQ,			//符号	!=
 	SYM_LES,			//符号	<
@@ -32,7 +32,7 @@ enum symtype
 	SYM_SEMICOLON,		//符号	;
 	SYM_PERIOD,			//符号	.
 	SYM_BECOMES,		//符号	:=
-	SYM_ASSIGN,		//符号	=
+	SYM_ASSIGN,			//符号	=
 	SYM_BEGIN,			//关键字	begin
 	SYM_END,			//关键字	end
 	SYM_IF,				//关键字	if
@@ -104,7 +104,7 @@ typedef struct
 } instruction;
 
 //错误信息库
-char* err_msg[] =
+char* errorMessage[] =
 {
 	/*  0 */ "",
 	/*  1 */ "Found ':=' when expecting '='.",
