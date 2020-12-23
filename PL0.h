@@ -9,6 +9,7 @@
 #define CXMAX 500			//代码数组的大小
 #define MAXSYM 30			//最大符号数
 #define STACKSIZE 1000		//最大存储量
+#define MAXDIM 10			//数组维度上限
 
 enum symtype
 {
@@ -71,7 +72,9 @@ enum opcode
 	CAL,	//用于过程调用的指令
 	INT,	//在数据栈中分配存贮空间
 	JMP,	//用于if, while 语句的条件或无条件控制转移指令
-	JPC		//一组算术或逻辑运算指令
+	JPC,	//一组算术或逻辑运算指令
+	LDA,	//将栈顶指向的内存的值置于栈顶
+	STA		//将栈顶的值赋予栈顶-1指向的内存
 };
 
 //PL0处理机运算集
@@ -134,8 +137,8 @@ char* errorMessage[] =
 	/* 25 */ "The number is too great.",
 	/* 26 */ "Procedure identifier can not be in an array declaration.",
 	/* 27 */ "There must be an identifier to follow '&'.",
-	/* 28 */ "",
-	/* 29 */ "",
+	/* 28 */ "The reference must be assigned by an identifier.",
+	/* 29 */ "expected a constant or a number",
 	/* 30 */ "",
 	/* 31 */ "",
 	/* 32 */ "There are too many levels." };
@@ -151,6 +154,7 @@ int errorCount;					//错误数量
 int currentInstructionIndex;	//要生成的当前指令的索引
 int currentLevel = 0;			//层级
 int tabIndex = 0;				//符号表索引
+int arrayTabIndex = 0;			//数组信息符号表索引
 
 char line[80];
 
@@ -180,49 +184,65 @@ char csym[NSYM + 1] =
 	' ', '+', '-', '*', '(', ')', '=', ',', '.', ';'
 };
 
-#define MAXINS 8	//PL0处理机指令集大小
+#define MAXINS 10	//PL0处理机指令集大小
 
 //PL0处理机指令字符串集
 char* mnemonic[MAXINS] =
 {
-	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC"
+	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC",	"LDA", "STA"
 };
 
 //常数符号
 typedef struct
 {
 	char name[MAXIDLEN + 1];	//标识符的名称
-	int kind;					//标识符的类型（值类型、引用类型）
+	int kind;					//标识符的类型
 	int value;					//标识符的值
 }comtab;
 
-//值变量符号
+//变量符号
 typedef struct
 {
 	char name[MAXIDLEN + 1];	//标识符的名称
-	int kind;					//标识符的类型（值类型、引用类型）
+	int kind;					//标识符的类型
 	short level;				//标识符的层级
 	short address;				//标识符对应内容的地址
 }mask;
-
-//引用变量符号
-typedef struct
-{
-	char name[MAXIDLEN + 1];	//标识符的名称
-	int kind;					//标识符的类型（值类型、引用类型）
-	short level;				//标识符的层级
-	short index;				//标识符指向的标识符在符号表中的索引
-}qmask;
 
 /*
 符号表
 通过enter添加条目
 有const、variable、procedure、array、quote五种类型
+目前暂时将array单独处理在arrayTable里
 onst使用comtab
 quote使用qmask
 其余使用mask
 */
 comtab table[TXMAX];
+
+//数组附加属性
+typedef struct 
+{
+	int dim;					//数组的维度数
+	short address;				//数组的首地址
+	short level;				//标识符的层级
+	int dimDateArray[MAXDIM];	//数组的维度表（每一维度的向量数）
+	int dimSizeArray[MAXDIM];	//数组的维度容量表（每一维度的容量）
+	int totalSize;				//数组的总大小
+}arrayAttribute;
+
+//数组名符号
+typedef struct
+{
+	char name[MAXIDLEN + 1];
+	int kind;
+	arrayAttribute* attribute;
+}arrayMask;
+
+arrayMask lastArray;			//上次读取的数组名
+arrayMask currentArray;			//当前分析的数组 名
+arrayMask arrayTable[TXMAX];	//数组专用符号表
+int currentArrayDim;			//当前分析的数组维度大小
 
 //编译文件
 FILE* infile;
