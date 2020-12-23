@@ -3,10 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+
 #include "PL0.h"
 #include "set.c"
 
-//打印错误信息
+void expression(symset fsys);
+
+//////////////////////////////////////////////////////////////////////
+// print error message.
 void error(int n)
 {
 	int i;
@@ -59,7 +64,8 @@ void getch(void)
 	lastCharacter = line[++characterCount];
 }
 
-//获取输入符号
+//////////////////////////////////////////////////////////////////////
+// gets a symbol from input stream.
 void getsym(void)
 {
 	int i, k;
@@ -178,8 +184,8 @@ void getsym(void)
 		getch();
 	}
 	else if (lastCharacter == '/')
+	{	
 		//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
-	{
 		getch();
 		if (lastCharacter == '/') // 读到"//"
 		{
@@ -281,7 +287,8 @@ void gen(int x, int y, int z)
 	code[currentInstructionIndex++].a = z;
 }
 
-//测试是否发生错误并跳过不属于s1或s2的所有符号
+//////////////////////////////////////////////////////////////////////
+// tests if error occurs and skips all symbols that do not belongs to s1 or s2.
 void test(symset s1, symset s2, int n)
 {
 	symset s;
@@ -361,9 +368,8 @@ void enter(int kind)
 void arrayEnter()
 {
 	arrayTabIndex++;
-
 	lastArray.attribute->dim = currentArrayDim;
-	lastArray.attribute->dimDateArray[currentArrayDim - 1] = 1;
+	lastArray.attribute->dimSizeArray[currentArrayDim - 1] = 1;
 	lastArray.attribute->level = currentLevel;
 	//计算每个维度的size
 	for (int i = currentArrayDim - 1; i > 0; i--)
@@ -371,6 +377,8 @@ void arrayEnter()
 	//计算TotalSize	 
 	lastArray.attribute->totalSize = lastArray.attribute->dimSizeArray[0] * lastArray.attribute->dimDateArray[0];
 	arrayTable[arrayTabIndex] = lastArray;
+	arrayTable[arrayTabIndex].attribute = (arrayAttribute*)malloc(sizeof(arrayAttribute));
+	*arrayTable[arrayTabIndex].attribute = *lastArray.attribute;
 	//dx作为首地址
 	arrayTable[arrayTabIndex].attribute->address = dx;
 	//为数组开辟sum大小的空间
@@ -486,7 +494,7 @@ void varDeclaration(void)
 			dimDeclaration();
 			arrayEnter();
 		}
-		else
+		else //标识符是变量
 			enter(ID_VARIABLE);
 	}
 	else if (lastSymbol == SYM_QUOTE)
@@ -523,8 +531,9 @@ void listcode(int from, int to)
 }
 
 //匹配数组的维度信息，并将偏移量置于栈顶
-void match_array_dim(symset fsys)
-{
+void matchArrayDim(symset fsys)
+{ 
+	//匹配数组的维度信息，并将偏移量置于栈顶
 	symset set;
 	currentArrayDim = 0;
 	gen(LIT, 0, 0);
@@ -545,7 +554,7 @@ void match_array_dim(symset fsys)
 //因子
 void factor(symset fsys)
 {
-	void expression(symset fsys);
+	//void expression(symset fsys);
 	int i;
 	symset set;
 
@@ -563,7 +572,7 @@ void factor(symset fsys)
 				{
 					arrayMask* mk = &arrayTable[i];
 					currentArray = arrayTable[i];
-					match_array_dim(fsys);
+					matchArrayDim(fsys);
 					gen(LDA, currentLevel - mk->attribute->level, mk->attribute->address);
 				}
 			}
@@ -590,6 +599,7 @@ void factor(symset fsys)
 					break;
 				case ID_ARRAY:
 					//不在正常符号表内处理数组
+					break;
 				}
 			getsym();
 		}
@@ -619,6 +629,38 @@ void factor(symset fsys)
 			getsym();
 			factor(fsys);
 			gen(OPR, 0, OPR_NEG);
+		}
+		else if (lastSymbol == SYM_NOT)
+		{
+			getsym();
+			factor(fsys);
+			gen(OPR, 0, OPR_NOT);
+		}
+		else if (lastSymbol == SYM_RDM)
+		{
+			getsym();
+			if (lastSymbol == SYM_LPAREN)
+			{
+				getsym();
+			}
+			else
+				error(33);
+			if (lastSymbol == SYM_RPAREN)
+			{
+				getsym();
+				gen(RDM, 0, 0);
+			}
+			else if (lastSymbol == SYM_NUMBER)
+			{
+				getsym();
+				if (lastSymbol == SYM_RPAREN)
+				{
+					gen(RDM, 0, lastNumber);
+					getsym();
+				}
+				else
+					error(22);
+			}
 		}
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
 	}
@@ -750,13 +792,12 @@ void statement(symset fsys)
 		if (i = arrayPosition(lastIdName) != 0)
 		{
 			//数组
-			arrayMask* amk;
 			getsym();
 			if (lastSymbol == SYM_LBRACK)
 			{
 				arrayMask* amk = &arrayTable[i];
 				currentArray = arrayTable[i];
-				match_array_dim(fsys);
+				matchArrayDim(fsys);
 				if (lastSymbol == SYM_BECOMES)
 					getsym();
 				else
@@ -1188,6 +1229,12 @@ void interpret()
 				pc = i.a;
 			top--;
 			break;
+		case RDM:
+			if (i.a == 0)
+				stack[++top] = rand();
+			else
+				stack[++top] = rand() % i.a;
+			break;
 		} // switch
 	} while (pc);
 
@@ -1201,6 +1248,7 @@ void main()
 	int i;
 	symset set, set1, set2;
 
+	srand((unsigned)time(0));
 	lastArray.attribute = (arrayAttribute*)malloc(sizeof(arrayAttribute));
 
 	printf("Please input source file name: "); // get file name to be compiled
@@ -1217,7 +1265,7 @@ void main()
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
 	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
+	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_RDM, SYM_NULL);
 
 	errorCount = characterCount = currentInstructionIndex = lineLenth = 0; // initialize global variables
 	lastCharacter = ' ';

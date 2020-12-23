@@ -1,5 +1,5 @@
 #include <stdio.h>
-#define NRW 11				//保留字数
+#define NRW 15				//保留字数
 #define TXMAX 500			//标识符表的长度
 #define MAXNUMLEN 14		//数字的最大位数
 #define NSYM 9				//数组ssym和csym中的最大符号数
@@ -49,7 +49,11 @@ enum symtype
 	SYM_NOT,			//符号	!
 	SYM_LBRACK,			//符号	[
 	SYM_RBRACK,			//符号	]
-	SYM_QUOTE			//符号	&
+	SYM_QUOTE,			//符号	&
+	SYM_GOTO,			//关键字	goto
+	SYM_ELSE,			//关键字	else
+	SYM_RDM,			//关键字	random
+	SYM_PRT				//关键字	print
 };
 
 //标识符的类型
@@ -74,7 +78,9 @@ enum opcode
 	JMP,	//用于if, while 语句的条件或无条件控制转移指令
 	JPC,	//一组算术或逻辑运算指令
 	LDA,	//将栈顶指向的内存的值置于栈顶
-	STA		//将栈顶的值赋予栈顶-1指向的内存
+	STA,	//将栈顶的值赋予栈顶-1指向的内存
+	RDM, 	//产生随机数置于栈顶
+	PRT		//打印栈顶值
 };
 
 //PL0处理机运算集
@@ -166,13 +172,15 @@ char* word[NRW + 1] =
 {
 	"", /* place holder */
 	"begin", "call", "const", "do", "end", "if",
-	"odd", "procedure", "then", "var", "while"
+	"odd", "procedure", "then", "var", "while", "goto", "else",
+		"random", "print"
 };
 
 int wsym[NRW + 1] =
 {
 	SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
-	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE };
+	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_GOTO, SYM_ELSE,
+		SYM_RDM, SYM_PRT };
 
 int ssym[NSYM + 1] =
 {
@@ -234,9 +242,9 @@ typedef struct
 //数组名符号
 typedef struct
 {
-	char name[MAXIDLEN + 1];
-	int kind;
-	arrayAttribute* attribute;
+	char name[MAXIDLEN + 1];	//标识符的名字
+	int kind;					//标识符的种类
+	arrayAttribute* attribute;	//数组属性结构
 }arrayMask;
 
 arrayMask lastArray;			//上次读取的数组名

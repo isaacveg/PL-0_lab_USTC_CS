@@ -1,0 +1,4 @@
+var i;
+begin
+	i := random(5);
+end.

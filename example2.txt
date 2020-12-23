@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 var i;
 procedure p;
 begin
@@ -8,3 +9,22 @@ begin
   i := 1;
   call p;
 end.
+=======
+var i;
+procedure p;
+begin
+  i := 2;
+end;
+<<<<<<< HEAD
+
+begin
+  i := 1;
+  call p;
+end.
+=======
+begin
+  i := 1;
+  call p;
+end.
+>>>>>>> ZhuBranch
+>>>>>>> wyy

@@ -1,6 +1,11 @@
-var i,j,k;
+var i,j,m,k[3],p[4],q[5];
 begin
-i := 1;//i = 1
-j := 0;
-if i && j then k := 1;
+i := 2;//i = 1
+j := 3;/*j=0*/
+m := 4;
+k[i] := 5;
+p[i] := k[i];
+p[j] := 6;
+q[m] := p[i];
+
 end.
