@@ -1,12 +1,17 @@
+// pl0 compiler source code
+
 #pragma warning(disable : 4996)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
 #include "PL0.h"
 #include "set.c"
 
-//打印错误信息
+//////////////////////////////////////////////////////////////////////
+// print error message.
 void error(int n)
 {
 	int i;
@@ -43,7 +48,8 @@ void getch(void)
 	ch = line[++cc];
 } // getch
 
-//获取输入符号
+//////////////////////////////////////////////////////////////////////
+// gets a symbol from input stream.
 void getsym(void)
 {
 	int i, k;
@@ -70,15 +76,7 @@ void getsym(void)
 		if (++i)
 			sym = wsym[i]; // symbol is a reserved word
 		else
-		{
-			if (ch == '[')
-			{
-				sym = SYM_ARRAY; // symbol is an array
-				getch();
-			}
-			else
-				sym = SYM_IDENTIFIER; // symbol is an identifier
-		}
+			sym = SYM_IDENTIFIER; // symbol is an identifier
 	}
 	else if (isdigit(ch))
 	{ // symbol is a number.
@@ -230,7 +228,8 @@ void getsym(void)
 	}
 } // getsym
 
-//生成中间代码
+//////////////////////////////////////////////////////////////////////
+// generates (assembles) an instruction. //生成中间代码
 void gen(int x, int y, int z)
 {
 	if (cx > CXMAX)
@@ -243,7 +242,8 @@ void gen(int x, int y, int z)
 	code[cx++].a = z;
 } // gen
 
-//测试是否发生错误并跳过不属于s1或s2的所有符号
+//////////////////////////////////////////////////////////////////////
+// tests if error occurs and skips all symbols that do not belongs to s1 or s2.
 void test(symset s1, symset s2, int n)
 {
 	symset s;
@@ -258,9 +258,10 @@ void test(symset s1, symset s2, int n)
 	}
 } // test
 
+//////////////////////////////////////////////////////////////////////
 int dx; // data allocation index
 
-//添加到符号表
+// enter object(constant, variable , procedre or array) into table.//添加到符号表
 void enter(int kind)
 {
 	mask *mk;
@@ -294,13 +295,19 @@ void enter(int kind)
 void enter_array()
 {
 	ax++;
-	array_table[ax] = mk_a;
-	enter(ID_VARIABLE);
-	array_table[ax].attr->address = tx;
-	for (int i = 0; i < array_table[ax].attr->sum - 1; i++)
+
+	lastArray.attr->dim = cur_dim;
+	lastArray.attr->size[cur_dim - 1] = 1;
+	lastArray.attr->level = level;
+	for (int i = cur_dim - 1; i > 0; i--)
 	{
-		enter(ID_VARIABLE);
+		lastArray.attr->size[i - 1] = lastArray.attr->size[i] * lastArray.attr->num[i]; //计算每个维度的size
 	}
+	lastArray.attr->sum = lastArray.attr->size[0] * lastArray.attr->num[0]; //计算sum
+
+	array_table[ax] = lastArray;
+	array_table[ax].attr->address = dx; //dx作为首地址
+	dx += lastArray.attr->sum;				//为数组开辟sum大小的空间
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -356,14 +363,11 @@ void constdeclaration()
 		error(4);
 	// There must be an identifier to follow 'const', 'var', or 'procedure'.
 } // constdeclaration
-
 //////////////////////////////////////////////////////////////////////
-void dimDeclaration(void)
+int dimConst()
 {
-	int value;
 	if (sym == SYM_IDENTIFIER || sym == SYM_NUMBER)
-	{ //如何enter？如何组织记录一个数组？
-		//identifier必是const类型
+	{ //identifier必是const类型
 		int i;
 		if (sym == SYM_IDENTIFIER)
 		{
@@ -377,21 +381,35 @@ void dimDeclaration(void)
 				i = 0;
 			}
 
-			value = table[i].value;
+			return table[i].value;
 		}
 		else
 		{
-			value = num;
+			return num;
 		}
 	}
-	mk_a.attr->num[cur_dim++] = value;
-	getsym();
-	if (sym != SYM_RBRACK)
-		error(27); //expected ']'
 	else
 	{
+		error(28);
+	}
+}
+//////////////////////////////////////////////////////////////////////
+void dimDeclaration(void)
+{
+	int value;
+	if (sym == SYM_LBRACK)
+	{
 		getsym();
-		if (sym == SYM_LBRACK)
+		value = dimConst();
+
+		lastArray.attr->num[cur_dim++] = value;
+
+		getsym();
+		if (sym != SYM_RBRACK)
+		{
+			error(27); //expected ']'
+		}
+		else
 		{
 			getsym();
 			dimDeclaration();
@@ -405,24 +423,16 @@ void vardeclaration(void)
 	if (sym == SYM_IDENTIFIER)
 	{
 		getsym();
-		enter(ID_VARIABLE);
-	}
-	else if (sym == SYM_ARRAY)
-	{
-		cur_dim = 0;
-		mk_a.kind = ID_ARRAY;
-		strcpy(mk_a.name, id);
-		getsym();
-		dimDeclaration();
-		mk_a.attr->dim = cur_dim;
-		mk_a.attr->size[cur_dim - 1] = 1;
-		mk_a.attr->level = level;
-		for (int i = cur_dim - 1; i > 0; i--)
-		{
-			mk_a.attr->size[i - 1] = mk_a.attr->size[i] * mk_a.attr->num[i];
+		if (sym == SYM_LBRACK)
+		{ //标识符是数组
+			cur_dim = 0;
+			lastArray.kind = ID_ARRAY;
+			strcpy(lastArray.name, id);
+			dimDeclaration();
+			enter_array();
 		}
-		mk_a.attr->sum = mk_a.attr->size[0] * mk_a.attr->num[0];
-		enter_array();
+		else //标识符是变量
+			enter(ID_VARIABLE);
 	}
 	else
 	{
@@ -443,7 +453,7 @@ void listcode(int from, int to)
 	printf("\n");
 } // listcode
 
-//因子
+//////////////////////////////////////////////////////////////////////
 void factor(symset fsys)
 {
 	void expression(symset fsys);
@@ -456,72 +466,52 @@ void factor(symset fsys)
 	{
 		if (sym == SYM_IDENTIFIER)
 		{
-			if ((i = position(id)) == 0)
-			{
-				error(11); // Undeclared identifier.
-			}
-			else
-			{
-				switch (table[i].kind)
-				{
-					mask *mk;
-				case ID_CONSTANT:
-					gen(LIT, 0, table[i].value);
-					break;
-				case ID_VARIABLE:
-					mk = (mask *)&table[i];
-					gen(LOD, level - mk->level, mk->address);
-					break;
-				case ID_PROCEDURE:
-					error(21); // Procedure identifier can not be in an expression.
-					break;
-				} // switch
-			}
 			getsym();
-		}
-		else if (sym == SYM_ARRAY)
-		{
-			cur_dim = 0;
-			if ((i = array_position(id)) == 0)
-			{
-				error(11); // Undeclared identifier.
+			if (sym == SYM_LBRACK)
+			{ // array
+				mask_array *mk;
+				cur_dim = 0;
+				if (!(i = array_position(id)))
+				{
+					error(11); // Undeclared identifier.
+				}
+				else
+				{
+					dimDeclaration();
+				}
+				mk = &array_table[i];
+				int addr = mk->attr->address; //基址
+
+				for (int i = 0; i < mk->attr->dim; i++)
+				{
+					addr += lastArray.attr->num[i] * mk->attr->size[i]; //加上偏移量
+				}
+				gen(LOD, level - mk->attr->level, addr);
 			}
 			else
-			{
-				getsym();
-				while (sym == SYM_NUMBER)
+			{ // variable
+				if ((i = position(id)) == 0)
 				{
-					array_link[cur_dim++] = num;
-					getsym();
-					if (sym == SYM_RBRACK)
+					error(11); // Undeclared identifier.
+				}
+				else
+				{
+					switch (table[i].kind)
 					{
-						getsym();
-						if (sym == SYM_LBRACK)
-						{
-							getsym();
-						}
-						else
-						{
-							break;
-						}
-					}
-					else
-					{
-						error(27);
-					}
+						mask *mk;
+					case ID_CONSTANT:
+						gen(LIT, 0, table[i].value);
+						break;
+					case ID_VARIABLE:
+						mk = (mask *)&table[i];
+						gen(LOD, level - mk->level, mk->address);
+						break;
+					case ID_PROCEDURE:
+						error(21); // Procedure identifier can not be in an expression.
+						break;
+					} // switch
 				}
 			}
-			//错误处理缺省
-			mask *mk;
-			mask_array *mk_t;
-			mk_t = &array_table[i];
-			mk = (mask *)&table[mk_t->attr->address];
-			int addr = mk->address;
-			for (int i = 0; i < cur_dim; i++)
-			{
-				addr += array_link[i] * mk_t->attr->size[i];
-			}
-			gen(LOD, level - mk_t->attr->level, addr);
 		}
 		else if (sym == SYM_NUMBER)
 		{
@@ -564,7 +554,7 @@ void factor(symset fsys)
 	} // if
 } // factor
 
-//项
+//////////////////////////////////////////////////////////////////////
 void term(symset fsys)
 {
 	int mulop;
@@ -589,7 +579,7 @@ void term(symset fsys)
 	destroyset(set);
 } // term
 
-//表达式
+//////////////////////////////////////////////////////////////////////
 void expression(symset fsys)
 {
 	int addop;
@@ -616,7 +606,7 @@ void expression(symset fsys)
 	destroyset(set);
 } // expression
 
-//条件
+//////////////////////////////////////////////////////////////////////
 void condition(symset fsys)
 {
 	int relop;
@@ -673,80 +663,52 @@ void condition(symset fsys)
 	}		  // else
 } // condition
 
-//声明
+//////////////////////////////////////////////////////////////////////
 void statement(symset fsys)
 {
 	int i, cx1, cx2;
 	symset set1, set;
 
 	if (sym == SYM_IDENTIFIER)
-	{ // variable assignment
-		mask *mk;
-		if (!(i = position(id)))
-		{
-			error(11); // Undeclared identifier.
-		}
-		else if (table[i].kind != ID_VARIABLE)
-		{
-			error(12); // Illegal assignment.
-			i = 0;
-		}
+	{
+		int cur_lever, addr;
 		getsym();
-		if (sym == SYM_BECOMES)
-		{
-			getsym();
-		}
-		else
-		{
-			error(13); // ':=' expected.
-		}
-		expression(fsys);
-		mk = (mask *)&table[i];
-		if (i)
-		{
-			gen(STO, level - mk->level, mk->address);
-		}
-	}
-	else if (sym == SYM_ARRAY)
-	{ //array assignment
-		cur_dim = 0;
-		mask *mk;
-		mask_array *mk_t;
-		if (!(i = array_position(id)))
-		{
-			error(11); // Undeclared identifier.
-		}
-		else
-		{
-			getsym();
-			while (sym == SYM_NUMBER)
+		if (sym == SYM_LBRACK)
+		{ // array assignment
+			mask_array *mk;
+			cur_dim = 0;
+			if (!(i = array_position(id)))
 			{
-				array_link[cur_dim++] = num;
-				getsym();
-				if (sym == SYM_RBRACK)
-				{
-					getsym();
-					if (sym == SYM_LBRACK)
-					{
-						getsym();
-					}
-					else
-					{
-						break;
-					}
-				}
-				else
-				{
-					error(27);
-				}
+				error(11); // Undeclared identifier.
+			}
+			else
+			{
+				dimDeclaration();
+			}
+			mk = &array_table[i];
+			cur_lever = mk->attr->level; //层次
+			addr = mk->attr->address;	 //基址
+
+			for (int i = 0; i < mk->attr->dim; i++)
+			{
+				addr += lastArray.attr->num[i] * mk->attr->size[i]; //加上偏移量
 			}
 		}
-		mk_t = &array_table[i];
-		mk = (mask *)&table[mk_t->attr->address];
-		int addr = mk->address;
-		for (int i = 0; i < mk_t->attr->dim; i++)
-		{
-			addr += array_link[i] * mk_t->attr->size[i];
+		else
+		{ // variable assignment
+			mask *mk;
+			if (!(i = position(id)))
+			{
+				error(11); // Undeclared identifier.
+			}
+			else if (table[i].kind != ID_VARIABLE)
+			{
+				error(12); // Illegal assignment.
+				i = 0;
+			}
+			mk = (mask *)&table[i];
+			cur_lever = mk->level; //层次
+			addr = mk->address;	   //地址
 		}
 
 		if (sym == SYM_BECOMES)
@@ -759,9 +721,10 @@ void statement(symset fsys)
 		}
 
 		expression(fsys);
+
 		if (i)
 		{
-			gen(STO, level - mk_t->attr->level, addr);
+			gen(STO, level - cur_lever, addr);
 		}
 	}
 	else if (sym == SYM_CALL)
@@ -1146,7 +1109,7 @@ void main()
 	int i;
 	symset set, set1, set2;
 
-	mk_a.attr = (attribute *)malloc(sizeof(attribute));
+	lastArray.attr = (attribute *)malloc(sizeof(attribute));
 
 	printf("Please input source file name: "); // get file name to be compiled
 	scanf("%s", s);
@@ -1162,7 +1125,7 @@ void main()
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
 	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_ARRAY, SYM_NULL);
+	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
 	ch = ' ';

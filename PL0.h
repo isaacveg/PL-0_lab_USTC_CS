@@ -12,7 +12,7 @@
 #define MAXLEVEL 32		 // maximum depth of nesting block
 #define CXMAX 500		 // size of code array
 
-#define MAXSYM 30 // maximum number of symbols
+#define MAXSYM 36 // maximum number of symbols
 
 #define STACKSIZE 1000 // maximum storage
 
@@ -53,7 +53,6 @@ enum symtype
 	SYM_NOT,	// !
 	SYM_LBRACK, // [
 	SYM_RBRACK, // ]
-	SYM_ARRAY	// array
 };
 
 enum idtype
@@ -134,7 +133,7 @@ char *err_msg[] =
 		/* 25 */ "The number is too great.",
 		/* 26 */ "Procedure identifier can not be in an array declaration",
 		/* 27 */ "expected ']'",
-		/* 28 */ "",
+		/* 28 */ "expected a constant or a number",
 		/* 29 */ "",
 		/* 30 */ "",
 		/* 31 */ "",
@@ -212,7 +211,7 @@ typedef struct //variable与procedure使用
 	char name[MAXIDLEN + 1];
 	int kind;
 	short level;
-	short address;//栈中地址
+	short address; //栈中地址
 } mask;
 
 typedef struct mask_array //array使用
@@ -222,7 +221,7 @@ typedef struct mask_array //array使用
 	attribute *attr;
 } mask_array;
 
-mask_array mk_a;
+mask_array lastArray;		   //最后读到的数组
 mask_array array_table[TXMAX]; //专门存放数组的符号表
 int cur_dim;
 int array_link[MAXDIM];
