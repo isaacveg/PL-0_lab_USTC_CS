@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#define NRW 11		 // number of reserved words
+#define NRW 13		 // number of reserved words
 #define TXMAX 500	 // length of identifier table
 #define MAXNUMLEN 14 // maximum number of digits in numbers
 #define NSYM 9		 // maximum number of symbols in array ssym and csym
@@ -12,7 +12,7 @@
 #define MAXLEVEL 32		 // maximum depth of nesting block
 #define CXMAX 500		 // size of code array
 
-#define MAXSYM 36 // maximum number of symbols
+#define MAXSYM 37 // maximum number of symbols
 
 #define STACKSIZE 1000 // maximum storage
 
@@ -53,6 +53,9 @@ enum symtype
 	SYM_NOT,	// !
 	SYM_LBRACK, // [
 	SYM_RBRACK, // ]
+	SYM_GOTO,	//goto
+	SYM_ELSE	// else
+
 };
 
 enum idtype
@@ -163,12 +166,12 @@ char *word[NRW + 1] =
 	{
 		"", /* place holder */
 		"begin", "call", "const", "do", "end", "if",
-		"odd", "procedure", "then", "var", "while"};
+		"odd", "procedure", "then", "var", "while", "goto", "else"};
 
 int wsym[NRW + 1] =
 	{
 		SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
-		SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE};
+		SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_GOTO, SYM_ELSE};
 
 int ssym[NSYM + 1] =
 	{

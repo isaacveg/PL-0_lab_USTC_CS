@@ -307,8 +307,9 @@ void enter_array()
 	lastArray.attr->sum = lastArray.attr->size[0] * lastArray.attr->num[0]; //计算sum
 
 	array_table[ax] = lastArray;
+	lastArray.attr = (attribute *)malloc(sizeof(attribute));
 	array_table[ax].attr->address = dx; //dx作为首地址
-	dx += lastArray.attr->sum;			//为数组开辟sum大小的空间
+	dx += array_table[ax].attr->sum;			//为数组开辟sum大小的空间
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -498,7 +499,7 @@ void factor(symset fsys)
 					mask_array *mk = &array_table[i];
 					curArray = array_table[i];
 					match_array_dim(fsys);
-					
+
 					gen(LDA, level - mk->attr->level, mk->attr->address);
 				}
 			}
