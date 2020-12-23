@@ -1,0 +1,7 @@
+var i,j;
+begin
+goto start;
+i := 0;
+start:
+i := 1;
+end.

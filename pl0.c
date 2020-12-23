@@ -103,7 +103,7 @@ void getsym(void)
 		}
 		else
 		{
-			sym = SYM_NULL; // illegal?
+			sym = SYM_COLON; // :
 		}
 	}
 	else if (ch == '>')
@@ -746,8 +746,42 @@ void statement(symset fsys)
 		{ // variable assignment
 			mask *mk;
 			if (!(i = position(id)))
-			{
-				error(11); // Undeclared identifier.
+			{ //发现未定义的变量
+				if (sym != SYM_COLON)
+					error(11); // Undeclared identifier.
+				else		   //id是一个lable
+				{			   //开始对lable的处理
+					set1 = createset(SYM_COLON, SYM_NULL);
+					fsys = uniteset(set1, fsys);
+					destroyset(set1);
+
+					strcpy(lable_name[0], id);
+					int k = lable_num;
+					while (strcmp(lable_name[k--], id) != 0) //检查是否有重复的lable
+						;
+
+					if (++k)
+					{
+						error(34); //有重复的lable
+					}
+					else
+					{
+						lable_num++;
+						if (lable_num > NLABLE)
+						{
+							error(35); //lable过多
+						}
+						else
+						{
+							strcpy(lable_name[lable_num], id);
+							lable_cx[lable_num] = cx; //存放lable对应的地址
+						}
+						getsym();
+						test(fsys, phi, 19);
+						statement(fsys);
+						return; //完成对 lable: 的匹配
+					}
+				} //else 至此完成对lable的处理
 			}
 			else if (table[i].kind != ID_VARIABLE)
 			{
@@ -869,6 +903,36 @@ void statement(symset fsys)
 		statement(fsys);
 		gen(JMP, 0, cx1);
 		code[cx2].a = cx;
+	}
+	else if (sym == SYM_GOTO)
+	{
+		getsym();
+		if (sym != SYM_IDENTIFIER)
+		{
+			error(8);
+		}
+		else
+		{
+			getsym();
+			if (sym != SYM_SEMICOLON)
+			{
+				error(36); //缺少';'
+			}
+			else //语法正确
+			{
+				goto_num++;
+				if (goto_num > NGOTO)
+				{
+					error(37); //goto过多
+				}
+				else
+				{
+					strcpy(goto_dest[goto_num], id);
+					goto_cx[goto_num] = cx; //记录这个goto产生的JMP指令的地址
+					gen(JMP, 0, 0);
+				}
+			}
+		}
 	}
 	test(fsys, phi, 19);
 } // statement
@@ -1184,8 +1248,8 @@ void main()
 
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
-	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_RDM, SYM_NULL);
+	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_IDENTIFIER, SYM_GOTO, SYM_NULL);
+	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_LBRACK, SYM_MINUS, SYM_NOT, SYM_RDM, SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
 	ch = ' ';
@@ -1205,6 +1269,23 @@ void main()
 	destroyset(declbegsys);
 	destroyset(statbegsys);
 	destroyset(facbegsys);
+
+	for (int n = 1; n <= goto_num; n++)
+	{ //为每个goto产生的JMP指令回填跳转地址
+		int m = lable_num;
+		strcpy(lable_name[0], goto_dest[n]); //将goto的目标作为哨兵
+		while (strcmp(lable_name[m--], goto_dest[n]) != 0)
+			;
+
+		if (++m)
+		{
+			code[goto_cx[n]].a = lable_cx[m]; //回填
+		}
+		else
+		{
+			error(38); //不存在这样的lable
+		}
+	}
 
 	if (sym != SYM_PERIOD)
 		error(9); // '.' expected.
