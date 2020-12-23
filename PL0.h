@@ -3,7 +3,11 @@
 #define NRW 13		 // number of reserved words
 #define TXMAX 500	 // length of identifier table
 #define MAXNUMLEN 14 // maximum number of digits in numbers
+<<<<<<< HEAD
 #define NSYM 9		 // maximum number of symbols in array ssym and csym
+=======
+#define NSYM 13		 // maximum number of symbols in array ssym and csym
+>>>>>>> ZhuBranch
 #define MAXIDLEN 10	 // length of identifiers
 
 #define MAXDIM 10 //maximum dimension of array
@@ -12,7 +16,11 @@
 #define MAXLEVEL 32		 // maximum depth of nesting block
 #define CXMAX 500		 // size of code array
 
+<<<<<<< HEAD
 #define MAXSYM 37 // maximum number of symbols
+=======
+#define MAXSYM 36 // maximum number of symbols
+>>>>>>> ZhuBranch
 
 #define STACKSIZE 1000 // maximum storage
 
@@ -53,9 +61,14 @@ enum symtype
 	SYM_NOT,	// !
 	SYM_LBRACK, // [
 	SYM_RBRACK, // ]
+<<<<<<< HEAD
 	SYM_GOTO,	//goto
 	SYM_ELSE	// else
 
+=======
+	SYM_RDM,
+	SYM_PRT
+>>>>>>> ZhuBranch
 };
 
 enum idtype
@@ -67,7 +80,11 @@ enum idtype
 };
 
 enum opcode
+<<<<<<< HEAD
 { //增加LDA和STA用于数组，
+=======
+{ //增加LDA和STA用于数组，新增RDM和PRT用于打印
+>>>>>>> ZhuBranch
 	LIT,
 	OPR,
 	LOD,
@@ -77,7 +94,13 @@ enum opcode
 	JMP,
 	JPC,
 	LDA,
+<<<<<<< HEAD
 	STA
+=======
+	STA,
+	RDM,     //random
+	PRT
+>>>>>>> ZhuBranch
 };
 
 enum oprcode
@@ -142,7 +165,13 @@ char *err_msg[] =
 		/* 29 */ "",
 		/* 30 */ "",
 		/* 31 */ "",
+<<<<<<< HEAD
 		/* 32 */ "There are too many levels."};
+=======
+		/* 32 */ "There are too many levels.",
+	    /* 33 */ "Missing '('."
+	};
+>>>>>>> ZhuBranch
 
 //////////////////////////////////////////////////////////////////////
 char ch;			   // last character read
@@ -166,12 +195,20 @@ char *word[NRW + 1] =
 	{
 		"", /* place holder */
 		"begin", "call", "const", "do", "end", "if",
+<<<<<<< HEAD
 		"odd", "procedure", "then", "var", "while", "goto", "else"};
+=======
+		"odd", "procedure", "then", "var", "while", "random", "print"};
+>>>>>>> ZhuBranch
 
 int wsym[NRW + 1] =
 	{
 		SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
+<<<<<<< HEAD
 		SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_GOTO, SYM_ELSE};
+=======
+		SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_RDM, SYM_PRT};
+>>>>>>> ZhuBranch
 
 int ssym[NSYM + 1] =
 	{
@@ -182,10 +219,17 @@ char csym[NSYM + 1] =
 	{
 		' ', '+', '-', '*', '(', ')', '=', ',', '.', ';'};
 
+<<<<<<< HEAD
 #define MAXINS 10 //增加LDA和STA用于数组，
 char *mnemonic[MAXINS] =
 	{
 		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA"};
+=======
+#define MAXINS 12 //增加LDA和STA用于数组，
+char *mnemonic[MAXINS] =
+	{
+		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT"};
+>>>>>>> ZhuBranch
 
 typedef struct //数组附加属性
 {

@@ -307,9 +307,14 @@ void enter_array()
 	lastArray.attr->sum = lastArray.attr->size[0] * lastArray.attr->num[0]; //计算sum
 
 	array_table[ax] = lastArray;
+<<<<<<< HEAD
 	lastArray.attr = (attribute *)malloc(sizeof(attribute));
 	array_table[ax].attr->address = dx; //dx作为首地址
 	dx += array_table[ax].attr->sum;			//为数组开辟sum大小的空间
+=======
+	array_table[ax].attr->address = dx; //dx作为首地址
+	dx += lastArray.attr->sum;			//为数组开辟sum大小的空间
+>>>>>>> ZhuBranch
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -499,7 +504,11 @@ void factor(symset fsys)
 					mask_array *mk = &array_table[i];
 					curArray = array_table[i];
 					match_array_dim(fsys);
+<<<<<<< HEAD
 
+=======
+					
+>>>>>>> ZhuBranch
 					gen(LDA, level - mk->attr->level, mk->attr->address);
 				}
 			}
@@ -564,6 +573,33 @@ void factor(symset fsys)
 			getsym();
 			factor(fsys);
 			gen(OPR, 0, OPR_NOT);
+<<<<<<< HEAD
+=======
+		}
+		else if (sym == SYM_RDM)
+		{
+		    getsym();
+		    if (sym == SYM_LPAREN)
+		    {
+		        getsym();
+		    }
+		    else error(33);
+		    if (sym == SYM_RPAREN)
+		    {
+		        getsym();
+		        gen(RDM,0,0);
+		    }
+		    else if (sym == SYM_NUMBER)
+		    {
+		        getsym();
+		        if (sym == SYM_RPAREN)
+		        {
+		            gen(RDM,0,num);
+		            getsym();
+		        }
+		        else error(22);
+		    }
+>>>>>>> ZhuBranch
 		}
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
 	} // if
@@ -1120,6 +1156,11 @@ void interpret()
 				pc = i.a;
 			top--;
 			break;
+		case RDM:
+		    if (i.a == 0)
+		        stack[++top] = random();
+		    else stack[++top] = random() % i.a;
+            break;
 		} // switch
 	} while (pc);
 
@@ -1150,7 +1191,11 @@ void main()
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
 	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
+<<<<<<< HEAD
 	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_NULL);
+=======
+	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_RDM,SYM_NULL);
+>>>>>>> ZhuBranch
 
 	err = cc = cx = ll = 0; // initialize global variables
 	ch = ' ';
