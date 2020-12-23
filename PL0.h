@@ -10,6 +10,8 @@
 #define MAXSYM 30			//最大符号数
 #define STACKSIZE 1000		//最大存储量
 #define MAXDIM 10			//数组维度上限
+#define MAXLABLE 20			//标签数目上限
+#define MAXGOTOINS 20			//跳转命令上限
 
 enum symtype
 {
@@ -31,6 +33,7 @@ enum symtype
 	SYM_RPAREN,			//符号	)
 	SYM_COMMA,			//符号	,
 	SYM_SEMICOLON,		//符号	;
+	SYM_COLON,			//符号	:
 	SYM_PERIOD,			//符号	.
 	SYM_BECOMES,		//符号	:=
 	SYM_ASSIGN,			//符号	=
@@ -123,7 +126,7 @@ char* errorMessage[] =
 	/*  5 */ "Missing ',' or ';'.",
 	/*  6 */ "Incorrect procedure name.",
 	/*  7 */ "Statement expected.",
-	/*  8 */ "Follow the statement is an incorrect symbol.",
+	/*  8 */ "Follow the Statement is an incorrect symbol.",
 	/*  9 */ "'.' expected.",
 	/* 10 */ "';' expected.",
 	/* 11 */ "Undeclared identifier.",
@@ -136,10 +139,10 @@ char* errorMessage[] =
 	/* 18 */ "'do' expected.",
 	/* 19 */ "Incorrect symbol.",
 	/* 20 */ "Relative operators expected.",
-	/* 21 */ "Procedure identifier can not be in an expression.",
+	/* 21 */ "Procedure identifier can not be in an Expression.",
 	/* 22 */ "Missing ')'.",
-	/* 23 */ "The symbol can not be followed by a factor.",
-	/* 24 */ "The symbol can not be as the beginning of an expression.",
+	/* 23 */ "The symbol can not be followed by a Factor.",
+	/* 24 */ "The symbol can not be as the beginning of an Expression.",
 	/* 25 */ "The number is too great.",
 	/* 26 */ "Procedure identifier can not be in an array declaration.",
 	/* 27 */ "There must be an identifier to follow '&'.",
@@ -147,7 +150,14 @@ char* errorMessage[] =
 	/* 29 */ "expected a constant or a number",
 	/* 30 */ "",
 	/* 31 */ "",
-	/* 32 */ "There are too many levels." };
+	/* 32 */ "There are too many levels." ,
+	/* 33 */ "Missing '('.",
+	/* 34 */ "the same label has been used.",
+	/* 35 */ "too many labels.",
+	/* 36 */ "",
+	/* 37 */ "too many goto.",
+	/* 38 */ "goto undifined lable."
+};
 
 char lastCharacter;				//上次读取的字符
 int lastSymbol;					//上次读取的符号
@@ -251,6 +261,19 @@ arrayMask lastArray;			//上次读取的数组名
 arrayMask currentArray;			//当前分析的数组 名
 arrayMask arrayTable[TXMAX];	//数组专用符号表
 int currentArrayDim;			//当前分析的数组维度大小
+
+/*
+由于分析goto时，lable不一定已经分析过，因此无法立即生成指令
+采取回填策略，在分析结束、执行之前，对goto产生的jmp指令的目标进行统一回填
+*/
+
+char jumpInsNameTable[MAXGOTOINS + 1][MAXIDLEN];	//跳转指令名称集合
+int jumpInsIndexTable[MAXGOTOINS + 1];				//跳转指令位置集合
+int jumpInsCount;						   			//跳转指令数目
+char labelNameTable[MAXLABLE + 1][MAXIDLEN]; 		//标签名称集合
+int labelIndexTable[MAXLABLE + 1];			   		//标签位置集合
+int labelCount;						   				//标签数目
+
 
 //编译文件
 FILE* infile;
