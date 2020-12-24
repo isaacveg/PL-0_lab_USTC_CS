@@ -2,7 +2,7 @@
 #define NRW 15				//保留字数
 #define TXMAX 500			//标识符表的长度
 #define MAXNUMLEN 14		//数字的最大位数
-#define NSYM 9				//数组ssym和csym中的最大符号数
+#define NSYM 10				//数组ssym和csym中的最大符号数
 #define MAXIDLEN 10			//标识符长度
 #define MAXADDRESS 32767	//最大地址
 #define MAXLEVEL 32			//嵌套块最大深度
@@ -10,9 +10,11 @@
 #define MAXSYM 30			//最大符号数
 #define STACKSIZE 1000		//最大存储量
 #define MAXDIM 10			//数组维度上限
-#define MAXLABLE 20			//标签数目上限
-#define MAXJUMPINS 20			//跳转命令上限
+#define MAXINS 12			//机器指令种类上限
+#define MAXLABEL 20			//标签数目上限
+#define MAXGOTOINS 20		//跳转指令数目上限
 
+//符号类型
 enum symtype
 {
 	SYM_NULL,			//NULL
@@ -33,8 +35,8 @@ enum symtype
 	SYM_RPAREN,			//符号	)
 	SYM_COMMA,			//符号	,
 	SYM_SEMICOLON,		//符号	;
-	SYM_COLON,			//符号	:
 	SYM_PERIOD,			//符号	.
+	SYM_COLON,			//符号	:
 	SYM_BECOMES,		//符号	:=
 	SYM_ASSIGN,			//符号	=
 	SYM_BEGIN,			//关键字	begin
@@ -56,7 +58,7 @@ enum symtype
 	SYM_GOTO,			//关键字	goto
 	SYM_ELSE,			//关键字	else
 	SYM_RDM,			//关键字	random
-	SYM_PRT				//关键字	print
+	SYM_PRT				//关键字	prtint
 };
 
 //标识符的类型
@@ -82,8 +84,8 @@ enum opcode
 	JPC,	//一组算术或逻辑运算指令
 	LDA,	//将栈顶指向的内存的值置于栈顶
 	STA,	//将栈顶的值赋予栈顶-1指向的内存
-	RDM, 	//产生随机数置于栈顶
-	PRT		//打印栈顶值
+	RDM,	//产生随机数
+	PRT		//打印
 };
 
 //PL0处理机运算集
@@ -110,10 +112,10 @@ enum oprcode
 //三格式指令FLA
 typedef struct
 {
-	int f; // function code
-	int l; // level
-	int a; // displacement address
-} instruction;
+	int f;	//function code
+	int l;	//level
+	int a;	//displacement address
+}instruction;
 
 //错误信息库
 char* errorMessage[] =
@@ -126,7 +128,7 @@ char* errorMessage[] =
 	/*  5 */ "Missing ',' or ';'.",
 	/*  6 */ "Incorrect procedure name.",
 	/*  7 */ "Statement expected.",
-	/*  8 */ "Follow the Statement is an incorrect symbol.",
+	/*  8 */ "Follow the statement is an incorrect symbol.",
 	/*  9 */ "'.' expected.",
 	/* 10 */ "';' expected.",
 	/* 11 */ "Undeclared identifier.",
@@ -139,42 +141,40 @@ char* errorMessage[] =
 	/* 18 */ "'do' expected.",
 	/* 19 */ "Incorrect symbol.",
 	/* 20 */ "Relative operators expected.",
-	/* 21 */ "Procedure identifier can not be in an Expression.",
+	/* 21 */ "Procedure identifier can not be in an expression.",
 	/* 22 */ "Missing ')'.",
-	/* 23 */ "The symbol can not be followed by a Factor.",
-	/* 24 */ "The symbol can not be as the beginning of an Expression.",
+	/* 23 */ "The symbol can not be followed by a factor.",
+	/* 24 */ "The symbol can not be as the beginning of an expression.",
 	/* 25 */ "The number is too great.",
 	/* 26 */ "Procedure identifier can not be in an array declaration.",
-	/* 27 */ "There must be an identifier to follow '&'.",
-	/* 28 */ "The reference must be assigned by an identifier.",
-	/* 29 */ "expected a constant or a number.",
-	/* 30 */ "expected ']'.",
+	/* 27 */ "expected ']'.",
+	/* 28 */ "expected a constant or a number.",
+	/* 29 */ "",
+	/* 30 */ "",
 	/* 31 */ "",
-	/* 32 */ "There are too many levels." ,
+	/* 32 */ "There are too many levels.",
 	/* 33 */ "Missing '('.",
-	/* 34 */ "The same label has been used.",
-	/* 35 */ "There are too many labels.",
-	/* 36 */ "",
-	/* 37 */ "There are too many 'goto' instruments.",
-	/* 38 */ "The label is undefined."
-};
+	/* 34 */ "the same label has been used.",
+	/* 35 */ "too many labels.",
+	/* 36 */ "Missing ';'.",
+	/* 37 */ "too many goto.",
+	/* 38 */ "goto undefined label." };
 
 char lastCharacter;				//上次读取的字符
 int lastSymbol;					//上次读取的符号
 char lastIdName[MAXIDLEN + 1];	//上次读取的标识符
-int lastNumber;					//上次读取的数字
+int dimDateArray;					//上次读取的数字
 int characterCount;				//字符数
-int lineLenth;
+int lineLenth;					//行长度
 int kk;
 int errorCount;					//错误数量
 int currentInstructionIndex;	//要生成的当前指令的索引
-int currentLevel = 0;			//层级
-int tabIndex = 0;				//符号表索引
-int arrayTabIndex = 0;			//数组信息符号表索引
+int level = 0;			//当前层
+int tableIndex = 0;				//符号表索引
 
 char line[80];
 
-//代码数组
+//代码集合
 instruction code[CXMAX];
 
 //关键字集合
@@ -183,32 +183,41 @@ char* word[NRW + 1] =
 	"", /* place holder */
 	"begin", "call", "const", "do", "end", "if",
 	"odd", "procedure", "then", "var", "while", "goto", "else",
-		"random", "print"
-};
+	"random", "print" };
 
 int wsym[NRW + 1] =
 {
 	SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
 	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_GOTO, SYM_ELSE,
-		SYM_RDM, SYM_PRT };
+	SYM_RDM, SYM_PRT
+};
 
 int ssym[NSYM + 1] =
 {
-	SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES,
-	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON };
+	SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES, SYM_LPAREN,
+	SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON
+};
 
 char csym[NSYM + 1] =
 {
 	' ', '+', '-', '*', '(', ')', '=', ',', '.', ';'
 };
 
-#define MAXINS 10	//PL0处理机指令集大小
 
-//PL0处理机指令字符串集
 char* mnemonic[MAXINS] =
 {
-	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC",	"LDA", "STA"
-};
+	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT" };
+
+//数组附加属性
+typedef struct
+{
+	int dim;					//维度
+	short address;				//首地址
+	short level;			//层级
+	int dimDateArray[MAXDIM];	//每一维的向量数
+	int dimSizeArray[MAXDIM];	//每一维的容量
+	int totalSize;				//数组总容量
+}attribute;
 
 //常数符号
 typedef struct
@@ -217,15 +226,6 @@ typedef struct
 	int kind;					//标识符的类型
 	int value;					//标识符的值
 }comtab;
-
-//变量符号
-typedef struct
-{
-	char name[MAXIDLEN + 1];	//标识符的名称
-	int kind;					//标识符的类型
-	short level;				//标识符的层级
-	short address;				//标识符对应内容的地址
-}mask;
 
 /*
 符号表
@@ -238,42 +238,38 @@ quote使用qmask
 */
 comtab table[TXMAX];
 
-//数组附加属性
-typedef struct 
+//变量符号
+typedef struct
 {
-	int dim;					//数组的维度数
-	short address;				//数组的首地址
+	char name[MAXIDLEN + 1];	//标识符的名称
+	int kind;					//标识符的类型
 	short level;				//标识符的层级
-	int dimDateArray[MAXDIM];	//数组的维度表（每一维度的向量数）
-	int dimSizeArray[MAXDIM];	//数组的维度容量表（每一维度的容量）
-	int totalSize;				//数组的总大小
-}arrayAttribute;
+	short address;				//标识符对应内容的地址
+}mask;
 
 //数组名符号
 typedef struct
 {
-	char name[MAXIDLEN + 1];	//标识符的名字
-	int kind;					//标识符的种类
-	arrayAttribute* attribute;	//数组属性结构
+	char name[MAXIDLEN + 1];
+	int kind;
+	attribute* attribute;
 }arrayMask;
 
-arrayMask lastArray;			//上次读取的数组名
-arrayMask currentArray;			//当前分析的数组 名
-arrayMask arrayTable[TXMAX];	//数组专用符号表
-int currentArrayDim;			//当前分析的数组维度大小
+arrayMask lastArray;		//上次读取的数组名
+arrayMask currentArray;		//当前分析的数组名
+int currentArrayDim;		//当前分析的数组维度大小
 
 /*
-由于分析goto时，lable不一定已经分析过，因此无法立即生成指令
+由于分析goto时，label不一定已经分析过，因此无法立即生成指令
 采取回填策略，在分析结束、执行之前，对goto产生的jmp指令的目标进行统一回填
 */
 
-char jumpInsNameTable[MAXJUMPINS + 1][MAXIDLEN];	//跳转指令名称集合
-int jumpInsIndexTable[MAXJUMPINS + 1];				//跳转指令位置集合
-int jumpInsCount;						   			//跳转指令数目
-char labelNameTable[MAXLABLE + 1][MAXIDLEN]; 		//标签名称集合
-int labelIndexTable[MAXLABLE + 1];			   		//标签位置集合
-int labelCount;						   				//标签数目
+char gotoInstNameTab[MAXGOTOINS + 1][MAXIDLEN];		//goto指令名称集合
+int gotoInstIndexTab[MAXGOTOINS + 1];				//goto指令索引集合
+int gotoInstCount;									//goto指令数目
+char label_name[MAXLABEL + 1][MAXIDLEN];			//标签名称集合
+int label_cx[MAXLABEL + 1];							//标签索引集合
+int label_num;										//标签数目
 
-
-//编译文件
+//编译文件指针
 FILE* infile;
