@@ -186,8 +186,14 @@ void GetSymbol(void)
 	}
 	else if (lastCharacter == '=')
 	{
-		lastSymbol = SYM_ASSIGN;
 		GetCharacter();
+		if (lastCharacter == '=')
+		{
+			lastSymbol = SYM_EQU;
+			GetCharacter();
+		}
+		else
+			lastSymbol = SYM_ASSIGN;
 	}
 	else if (lastCharacter == '/')
 		//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
