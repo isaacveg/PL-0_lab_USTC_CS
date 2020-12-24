@@ -68,7 +68,7 @@ enum idtype
 	ID_VARIABLE,	//值类型变量
 	ID_PROCEDURE,	//过程
 	ID_ARRAY,		//数组
-	ID_REFERENCE	//引用类型变量
+	ID_REFERENCE	//引用类型
 };
 
 //PL0处理机指令集
@@ -149,9 +149,9 @@ char* errorMessage[] =
 	/* 26 */ "Procedure identifier can not be in an array declaration.",
 	/* 27 */ "expected ']'.",
 	/* 28 */ "expected a constant or a number.",
-	/* 29 */ "",
-	/* 30 */ "",
-	/* 31 */ "",
+	/* 29 */ "There must be an identify to follow '&'.",
+	/* 30 */ "The reference does not initial.",
+	/* 31 */ "There must be a identify to follow '='.",
 	/* 32 */ "There are too many levels.",
 	/* 33 */ "Missing '('.",
 	/* 34 */ "the same label has been used.",

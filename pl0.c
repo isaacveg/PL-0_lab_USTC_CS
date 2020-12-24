@@ -52,7 +52,7 @@ void GetCharacter(void)
 		lineLenth = characterCount = 0;
 		printf("%5d  ", currentInstructionIndex);
 		while ((!feof(infile)) // added & modified by alex 01-02-09
-			   && ((lastCharacter = getc(infile)) != '\n'))
+			&& ((lastCharacter = getc(infile)) != '\n'))
 		{
 			printf("%c", lastCharacter);
 			line[++lineLenth] = lastCharacter;
@@ -157,6 +157,8 @@ void GetSymbol(void)
 			lastSymbol = SYM_AND; // &&
 			GetCharacter();
 		}
+		else
+			lastSymbol = SYM_QUOTE;
 	}
 	else if (lastCharacter == '|')
 	{
@@ -182,8 +184,13 @@ void GetSymbol(void)
 		lastSymbol = SYM_RBRACK;
 		GetCharacter();
 	}
+	else if (lastCharacter == '=')
+	{
+		lastSymbol = SYM_ASSIGN;
+		GetCharacter();
+	}
 	else if (lastCharacter == '/')
-	//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
+		//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
 	{
 		GetCharacter();
 		if (lastCharacter == '/') // 读到"//"
@@ -322,8 +329,8 @@ int dateIndex;	 //数据分配索引
 */
 void Enter(int kind)
 {
-	mask *mk;
-	arrayMask *mk_a;
+	mask* mk;
+	arrayMask* mk_a;
 
 	tableIndex++;
 	strcpy(table[tableIndex].name, lastIdName);
@@ -339,12 +346,12 @@ void Enter(int kind)
 		table[tableIndex].value = dimDateArray;
 		break;
 	case ID_VARIABLE:
-		mk = (mask *)&table[tableIndex];
+		mk = (mask*)& table[tableIndex];
 		mk->level = level;
 		mk->address = dateIndex++;
 		break;
 	case ID_PROCEDURE:
-		mk = (mask *)&table[tableIndex];
+		mk = (mask*)& table[tableIndex];
 		mk->level = level;
 		break;
 	case ID_ARRAY:
@@ -356,17 +363,21 @@ void Enter(int kind)
 			lastArray.attribute->dimSizeArray[i - 1] = lastArray.attribute->dimSizeArray[i] * lastArray.attribute->dimDateArray[i]; //计算每个维度的dimSizeArray
 		}
 		lastArray.attribute->totalSize = lastArray.attribute->dimSizeArray[0] * lastArray.attribute->dimDateArray[0]; //计算totalSize
-		mk_a = (arrayMask *)&table[tableIndex];
+		mk_a = (arrayMask*)& table[tableIndex];
 		*mk_a = lastArray;										 //至此完成name，dim，level，dimDateArray，dimSizeArray，totalSize的修改，还差address
 		mk_a->attribute->address = dateIndex;								 //dateIndex作为首地址
 		dateIndex += mk_a->attribute->totalSize;									 //为数组开辟totalSize大小的空间
-		lastArray.attribute = (attribute *)malloc(sizeof(attribute)); //先前为lastArray.attribute开辟的空间已经被table使用，开辟新的空间
+		lastArray.attribute = (attribute*)malloc(sizeof(attribute)); //先前为lastArray.attribute开辟的空间已经被table使用，开辟新的空间
+		break;
+	case ID_REFERENCE:
+		mk = (mask*)& table[tableIndex];
+		mk->level = level;
 		break;
 	} // switch
 }
 
 //在符号表中查找标识符并返回索引
-int Position(char *lastIdName)
+int Position(char* lastIdName)
 {
 	int i;
 	strcpy(table[0].name, lastIdName);
@@ -476,13 +487,42 @@ void Vardeclaration(void)
 			DimDeclaration();
 			Enter(ID_ARRAY);
 		}
-		else //标识符是变量
+		else
 			Enter(ID_VARIABLE);
 	}
-	else
+	else if (lastSymbol == SYM_QUOTE)
 	{
-		Error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
+		GetSymbol();
+		if (lastSymbol == SYM_IDENTIFIER)
+		{
+			Enter(ID_REFERENCE);
+			GetSymbol();
+			if (lastSymbol == SYM_ASSIGN)
+			{
+				GetSymbol();
+				if (lastSymbol == SYM_IDENTIFIER)
+				{
+					int i = Position(lastIdName);
+					if (i != 0)
+					{
+						//对引用类型所指向的地址进行回填
+						((mask*)table + tableIndex)->address = ((mask*)table + i)->address;
+						GetSymbol();
+					}
+					else
+						Error(11);	//Undeclared identifier.
+				}
+				else
+					Error(31);	//There must be a identify to follow '='.
+			}
+			else
+				Error(30);	//The reference does not initial.
+		}
+		else
+			Error(29);	//There must be an identify to follow '&'.
 	}
+	else
+		Error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
 }
 
 /*
@@ -534,7 +574,7 @@ void Factor(symset fsys)
 
 	if (inset(lastSymbol, facbegsys))
 	{
-		if (lastSymbol == SYM_IDENTIFIER)
+		if (lastSymbol == SYM_IDENTIFIER || lastSymbol == ID_REFERENCE)
 		{
 			GetSymbol();
 			if (lastSymbol == SYM_LBRACK)
@@ -545,7 +585,7 @@ void Factor(symset fsys)
 				}
 				else
 				{
-					arrayMask *mk = (arrayMask *)&table[i];
+					arrayMask* mk = (arrayMask*)& table[i];
 					currentArray = *mk;
 					MatchArrayDim(fsys);
 
@@ -562,12 +602,13 @@ void Factor(symset fsys)
 				{
 					switch (table[i].kind)
 					{
-						mask *mk;
+						mask* mk;
 					case ID_CONSTANT:
 						Generate(LIT, 0, table[i].value);
 						break;
+					case ID_REFERENCE:
 					case ID_VARIABLE:
-						mk = (mask *)&table[i];
+						mk = (mask*)& table[i];
 						Generate(LOD, level - mk->level, mk->address);
 						break;
 					case ID_PROCEDURE:
@@ -798,7 +839,7 @@ void Statement(symset fsys)
 				Error(11); // Undeclared identifier.
 			}
 
-			arrayMask *mk = (arrayMask *)&table[i];
+			arrayMask* mk = (arrayMask*)& table[i];
 			currentArray = *mk;
 			MatchArrayDim(fsys);
 
@@ -820,7 +861,7 @@ void Statement(symset fsys)
 		}
 		else
 		{ // variable assignment
-			mask *mk;
+			mask* mk;
 			if (!(i = Position(lastIdName)))
 			{ //发现未定义的变量
 				if (lastSymbol != SYM_COLON)
@@ -859,12 +900,12 @@ void Statement(symset fsys)
 					}
 				} //else 至此完成对label的处理
 			}
-			else if (table[i].kind != ID_VARIABLE)
+			else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_REFERENCE)
 			{
 				Error(12); // Illegal assignment.
 				i = 0;
 			}
-			mk = (mask *)&table[i];
+			mk = (mask*)& table[i];
 
 			if (lastSymbol == SYM_BECOMES)
 			{
@@ -896,8 +937,8 @@ void Statement(symset fsys)
 			}
 			else if (table[i].kind == ID_PROCEDURE)
 			{
-				mask *mk;
-				mk = (mask *)&table[i];
+				mask* mk;
+				mk = (mask*)& table[i];
 				Generate(CAL, level - mk->level, mk->address);
 			}
 			else
@@ -1075,14 +1116,14 @@ void Statement(symset fsys)
 void Block(symset fsys)
 {
 	int cx0; // initial code index
-	mask *mk;
+	mask* mk;
 	int block_dx;
 	int savedTx;
 	symset set1, set;
 
 	dateIndex = 3;
 	block_dx = dateIndex;
-	mk = (mask *)&table[tableIndex];
+	mk = (mask*)& table[tableIndex];
 	mk->address = currentInstructionIndex;
 	Generate(JMP, 0, 0);
 	if (level > MAXLEVEL)
@@ -1393,14 +1434,14 @@ void Interpret()
 
 void main()
 {
-	FILE *hbin;
+	FILE* hbin;
 	char s[80];
 	int i;
 	symset set, set1, set2;
 
 	srand((unsigned)time(0));
 
-	lastArray.attribute = (attribute *)malloc(sizeof(attribute));
+	lastArray.attribute = (attribute*)malloc(sizeof(attribute));
 
 	printf("Please input source file name: "); // get file name to be compiled
 	scanf("%s", s);
