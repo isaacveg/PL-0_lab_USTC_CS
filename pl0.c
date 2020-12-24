@@ -7,6 +7,7 @@
 #include "PL0.h"
 #include "set.c"
 
+void OrCondition(symset fsys);
 void Expression(symset fsys);
 
 //打印错误信息
@@ -88,9 +89,12 @@ void GetSymbol(void)
 		while (strcmp(lastIdName, word[i--]))
 			;
 		if (++i)
-			lastSymbol = wsym[i]; // symbol is a reserved word
+			lastSymbol = wsym[i]; // symbol is a reserved word 	
 		else
+		{
 			lastSymbol = SYM_IDENTIFIER; // symbol is an identifier
+			strcpy(lastIdName, a);
+		}
 	}
 	else if (isdigit(lastCharacter))
 	{ // symbol is a number.
@@ -183,17 +187,6 @@ void GetSymbol(void)
 	{
 		lastSymbol = SYM_RBRACK;
 		GetCharacter();
-	}
-	else if (lastCharacter == '=')
-	{
-		GetCharacter();
-		if (lastCharacter == '=')
-		{
-			lastSymbol = SYM_EQU;
-			GetCharacter();
-		}
-		else
-			lastSymbol = SYM_ASSIGN;
 	}
 	else if (lastCharacter == '/')
 		//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
@@ -399,7 +392,7 @@ void ConstDeclaration()
 	if (lastSymbol == SYM_IDENTIFIER)
 	{
 		GetSymbol();
-		if (lastSymbol == SYM_EQU || lastSymbol == SYM_BECOMES)
+		if (lastSymbol == SYM_EQU || lastSymbol == SYM_BECOMES || lastSymbol == SYM_EQU)
 		{
 			if (lastSymbol == SYM_BECOMES)
 				Error(1); // Found ':=' when expecting '='.
@@ -503,7 +496,7 @@ void Vardeclaration(void)
 		{
 			Enter(ID_REFERENCE);
 			GetSymbol();
-			if (lastSymbol == SYM_ASSIGN)
+			if (lastSymbol == SYM_EQU)
 			{
 				GetSymbol();
 				if (lastSymbol == SYM_IDENTIFIER)
@@ -569,6 +562,9 @@ void MatchArrayDim(symset fsys)
 	}
 }
 
+//强制Factor的关键字集合
+symset endFacorSet;
+
 //因子
 void Factor(symset fsys)
 {
@@ -582,6 +578,7 @@ void Factor(symset fsys)
 	{
 		if (lastSymbol == SYM_IDENTIFIER || lastSymbol == ID_REFERENCE)
 		{
+			i = Position(lastIdName);
 			GetSymbol();
 			if (lastSymbol == SYM_LBRACK)
 			{ // array
@@ -600,7 +597,7 @@ void Factor(symset fsys)
 			}
 			else
 			{ // variable
-				if ((i = Position(lastIdName)) == 0)
+				if (!inset(lastSymbol, endFacorSet) && Position(lastIdName) == 0)
 				{
 					Error(11); // Undeclared identifier.
 				}
@@ -684,7 +681,7 @@ void Factor(symset fsys)
 					GetSymbol();
 				}
 				else
-					Error(22);
+					Error(22);	//Missing ')'.
 			}
 		}
 		Test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
@@ -742,13 +739,28 @@ void Expression(symset fsys)
 
 	destroyset(set);
 }
+
 //一般优先级条件
 void Condition(symset fsys)
 {
 	int relop;
 	symset set;
 
-	if (lastSymbol == SYM_ODD)
+	if (lastSymbol == SYM_LPAREN)
+	{
+		GetSymbol();
+		set = createset(SYM_RPAREN, SYM_NULL);
+		set = uniteset(set, fsys);
+		OrCondition(set);
+		if (lastSymbol == SYM_RPAREN)
+		{
+			GetSymbol();
+		}
+		else
+			Error(22); //Missing ')'.
+		destroyset(set);
+	}
+	else if (lastSymbol == SYM_ODD)
 	{
 		GetSymbol();
 		Expression(fsys);
@@ -958,25 +970,11 @@ void Statement(symset fsys)
 	{ // if Statement
 		GetSymbol();
 
-		if (lastSymbol == SYM_LPAREN)
-		{
-			GetSymbol();
-		}
-		else
-			Error(33); //Missing '('.
-
-		set1 = createset(SYM_RPAREN, SYM_NULL);
+		set1 = createset(SYM_THEN, SYM_NULL);
 		set = uniteset(set1, fsys);
 		OrCondition(set);
 		destroyset(set1);
 		destroyset(set);
-
-		if (lastSymbol == SYM_RPAREN)
-		{
-			GetSymbol();
-		}
-		else
-			Error(33); //Missing ')'.
 
 		if (lastSymbol == SYM_THEN)
 		{
@@ -1024,11 +1022,13 @@ void Statement(symset fsys)
 	{ // while Statement
 		cx1 = currentInstructionIndex;
 		GetSymbol();
-		set1 = createset(SYM_DO, SYM_NULL);
-		set = uniteset(set1, fsys);
-		Condition(set);
+
+		set = createset(SYM_DO, SYM_NULL);
+		set1 = uniteset(set, fsys);
+		Condition(set1);
 		destroyset(set1);
 		destroyset(set);
+
 		cx2 = currentInstructionIndex;
 		Generate(JPC, 0, 0);
 		if (lastSymbol == SYM_DO)
@@ -1051,7 +1051,7 @@ void Statement(symset fsys)
 			GetSymbol();
 		}
 		else
-			Error(33);
+			Error(33);	//Missing '('.
 		if (lastSymbol == SYM_RPAREN)
 		{
 			Generate(PRT, 0, 0);
@@ -1444,6 +1444,8 @@ void main()
 	char s[80];
 	int i;
 	symset set, set1, set2;
+
+	endFacorSet = createset(SYM_THEN, SYM_DO, SYM_NULL);
 
 	srand((unsigned)time(0));
 

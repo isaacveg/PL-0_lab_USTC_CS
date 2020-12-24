@@ -25,7 +25,7 @@ enum symtype
 	SYM_TIMES,			//符号	*
 	SYM_SLASH,			//符号	/
 	SYM_ODD,			//符号	odd（判定奇偶性）
-	SYM_EQU,			//符号	==
+	SYM_EQU,			//符号	=
 	SYM_NEQ,			//符号	!=
 	SYM_LES,			//符号	<
 	SYM_LEQ,			//符号	<=
@@ -38,7 +38,6 @@ enum symtype
 	SYM_PERIOD,			//符号	.
 	SYM_COLON,			//符号	:
 	SYM_BECOMES,		//符号	:=
-	SYM_ASSIGN,			//符号	=
 	SYM_BEGIN,			//关键字	begin
 	SYM_END,			//关键字	end
 	SYM_IF,				//关键字	if
@@ -203,10 +202,11 @@ char csym[NSYM + 1] =
 	' ', '+', '-', '*', '(', ')', '=', ',', '.', ';'
 };
 
-
+//PL0指令集字符串集合
 char* mnemonic[MAXINS] =
 {
-	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT" };
+	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT" 
+};
 
 //数组附加属性
 typedef struct
