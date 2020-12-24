@@ -267,6 +267,7 @@ int dx; // data allocation index
 void enter(int kind)
 {
 	mask *mk;
+	mask_array *mk_a;
 
 	tx++;
 	strcpy(table[tx].name, id);
@@ -290,28 +291,23 @@ void enter(int kind)
 		mk = (mask *)&table[tx];
 		mk->level = level;
 		break;
+	case ID_ARRAY:
+		lastArray.attr->dim = cur_dim;
+		lastArray.attr->size[cur_dim - 1] = 1;
+		lastArray.attr->level = level;
+		for (int i = cur_dim - 1; i > 0; i--)
+		{
+			lastArray.attr->size[i - 1] = lastArray.attr->size[i] * lastArray.attr->num[i]; //计算每个维度的size
+		}
+		lastArray.attr->sum = lastArray.attr->size[0] * lastArray.attr->num[0]; //计算sum
+		mk_a = (mask_array *)&table[tx];
+		*mk_a = lastArray;										 //至此完成name，dim，level，num，size，sum的修改，还差address
+		mk_a->attr->address = dx;								 //dx作为首地址
+		dx += mk_a->attr->sum;									 //为数组开辟sum大小的空间
+		lastArray.attr = (attribute *)malloc(sizeof(attribute)); //先前为lastArray.attr开辟的空间已经被table使用，开辟新的空间
+		break;
 	} // switch
 } // enter
-
-//////////////////////////////////////////////////////////////////////
-void enter_array()
-{
-	ax++;
-
-	lastArray.attr->dim = cur_dim;
-	lastArray.attr->size[cur_dim - 1] = 1;
-	lastArray.attr->level = level;
-	for (int i = cur_dim - 1; i > 0; i--)
-	{
-		lastArray.attr->size[i - 1] = lastArray.attr->size[i] * lastArray.attr->num[i]; //计算每个维度的size
-	}
-	lastArray.attr->sum = lastArray.attr->size[0] * lastArray.attr->num[0]; //计算sum
-
-	array_table[ax] = lastArray;
-	lastArray.attr = (attribute *)malloc(sizeof(attribute));
-	array_table[ax].attr->address = dx; //dx作为首地址
-	dx += array_table[ax].attr->sum;	//为数组开辟sum大小的空间
-}
 
 //////////////////////////////////////////////////////////////////////
 // locates identifier in symbol table.
@@ -324,17 +320,6 @@ int position(char *id)
 		;
 	return i;
 } // position
-//////////////////////////////////////////////////////////////////////
-// 在数组表中定位id
-int array_position(char *id)
-{
-	int i;
-	strcpy(array_table[0].name, id);
-	i = ax + 1;
-	while (strcmp(array_table[--i].name, id) != 0)
-		;
-	return i;
-}
 
 //////////////////////////////////////////////////////////////////////
 void constdeclaration()
@@ -432,7 +417,7 @@ void vardeclaration(void)
 			lastArray.kind = ID_ARRAY;
 			strcpy(lastArray.name, id);
 			dimDeclaration();
-			enter_array();
+			enter(ID_ARRAY);
 		}
 		else //标识符是变量
 			enter(ID_VARIABLE);
@@ -491,14 +476,14 @@ void factor(symset fsys)
 			getsym();
 			if (sym == SYM_LBRACK)
 			{ // array
-				if (!(i = array_position(id)))
+				if (!(i = position(id)))
 				{
 					error(11); // Undeclared identifier.
 				}
 				else
 				{
-					mask_array *mk = &array_table[i];
-					curArray = array_table[i];
+					mask_array *mk = (mask_array *)&table[i];
+					curArray = *mk;
 					match_array_dim(fsys);
 
 					gen(LDA, level - mk->attr->level, mk->attr->address);
@@ -627,7 +612,7 @@ void expression(symset fsys)
 	int addop;
 	symset set;
 
-	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS,SYM_NULL));
+	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS, SYM_NULL));
 
 	term(set);
 	while (sym == SYM_PLUS || sym == SYM_MINUS)
@@ -667,72 +652,71 @@ void condition(symset fsys)
 		destroyset(set);
 		if (inset(sym, relset))
 		{
-            relop = sym;
-            getsym();
-            set = uniteset(relset, fsys);
-            expression(set);
-            destroyset(set);
-            switch (relop)
-            {
-                case SYM_EQU:
-                    gen(OPR, 0, OPR_EQU);
-                    break;
-                case SYM_NEQ:
-                    gen(OPR, 0, OPR_NEQ);
-                    break;
-                case SYM_LES:
-                    gen(OPR, 0, OPR_LES);
-                    break;
-                case SYM_GEQ:
-                    gen(OPR, 0, OPR_GEQ);
-                    break;
-                case SYM_GTR:
-                    gen(OPR, 0, OPR_GTR);
-                    break;
-                case SYM_LEQ:
-                    gen(OPR, 0, OPR_LEQ);
-                    break;
-		    }
-		 // switch
-		}	  // else
-	}		  // else
+			relop = sym;
+			getsym();
+			set = uniteset(relset, fsys);
+			expression(set);
+			destroyset(set);
+			switch (relop)
+			{
+			case SYM_EQU:
+				gen(OPR, 0, OPR_EQU);
+				break;
+			case SYM_NEQ:
+				gen(OPR, 0, OPR_NEQ);
+				break;
+			case SYM_LES:
+				gen(OPR, 0, OPR_LES);
+				break;
+			case SYM_GEQ:
+				gen(OPR, 0, OPR_GEQ);
+				break;
+			case SYM_GTR:
+				gen(OPR, 0, OPR_GTR);
+				break;
+			case SYM_LEQ:
+				gen(OPR, 0, OPR_LEQ);
+				break;
+			}
+			// switch
+		} // else
+	}	  // else
 } // condition
 
 //////////////////////////////////////////////////////////////////////
 void and_condition(symset fsys)
 {
-    symset set,set1;
+	symset set, set1;
 
-    set1 = createset(SYM_AND,SYM_NULL);
-    set = uniteset(set1, fsys);
-    condition(set);
-    while (sym == SYM_AND)
-    {
-        getsym();
-        condition(set);
-        gen(OPR,0,OPR_AND);
-    }
-    destroyset(set1);
-    destroyset(set);
+	set1 = createset(SYM_AND, SYM_NULL);
+	set = uniteset(set1, fsys);
+	condition(set);
+	while (sym == SYM_AND)
+	{
+		getsym();
+		condition(set);
+		gen(OPR, 0, OPR_AND);
+	}
+	destroyset(set1);
+	destroyset(set);
 }
-
 
 //////////////////////////////////////////////////////////////////////
 void or_condition(symset fsys)
 {
-    symset set,set1;
+	symset set, set1;
 
-    set1 = createset(SYM_OR,SYM_NULL);
-    set = uniteset(set1, fsys);
-    and_condition(set);
-    while (sym == SYM_OR)
-    {
-        getsym();
-        and_condition(set);
-        gen(OPR,0,OPR_OR);
-    }
-    destroyset(set1);
-    destroyset(set);
+	set1 = createset(SYM_OR, SYM_NULL);
+	set = uniteset(set1, fsys);
+	and_condition(set);
+	while (sym == SYM_OR)
+	{
+		getsym();
+		and_condition(set);
+		gen(OPR, 0, OPR_OR);
+	}
+	destroyset(set1);
+	destroyset(set);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -747,13 +731,13 @@ void statement(symset fsys)
 		getsym();
 		if (sym == SYM_LBRACK)
 		{ // array assignment
-			if (!(i = array_position(id)))
+			if (!(i = position(id)))
 			{
 				error(11); // Undeclared identifier.
 			}
 
-			mask_array *mk = &array_table[i];
-			curArray = array_table[i];
+			mask_array *mk = (mask_array *)&table[i];
+			curArray = *mk;
 			match_array_dim(fsys);
 
 			if (sym == SYM_BECOMES)
@@ -779,39 +763,39 @@ void statement(symset fsys)
 			{ //发现未定义的变量
 				if (sym != SYM_COLON)
 					error(11); // Undeclared identifier.
-				else		   //id是一个lable
-				{			   //开始对lable的处理
+				else		   //id是一个label
+				{			   //开始对label的处理
 					set1 = createset(SYM_COLON, SYM_NULL);
 					fsys = uniteset(set1, fsys);
 					destroyset(set1);
 
-					strcpy(lable_name[0], id);
-					int k = lable_num;
-					while (strcmp(lable_name[k--], id) != 0) //检查是否有重复的lable
+					strcpy(label_name[0], id);
+					int k = label_num;
+					while (strcmp(label_name[k--], id) != 0) //检查是否有重复的label
 						;
 
 					if (++k)
 					{
-						error(34); //有重复的lable
+						error(34); //有重复的label
 					}
 					else
 					{
-						lable_num++;
-						if (lable_num > NLABLE)
+						label_num++;
+						if (label_num > NLABEL)
 						{
-							error(35); //lable过多
+							error(35); //label过多
 						}
 						else
 						{
-							strcpy(lable_name[lable_num], id);
-							lable_cx[lable_num] = cx; //存放lable对应的地址
+							strcpy(label_name[label_num], id);
+							label_cx[label_num] = cx; //存放label对应的地址
 						}
 						getsym();
 						test(fsys, phi, 19);
 						statement(fsys);
-						return; //完成对 lable: 的匹配
+						return; //完成对 label: 的匹配
 					}
-				} //else 至此完成对lable的处理
+				} //else 至此完成对label的处理
 			}
 			else if (table[i].kind != ID_VARIABLE)
 			{
@@ -865,9 +849,12 @@ void statement(symset fsys)
 	{ // if statement
 		getsym();
 
-		if (sym == SYM_LPAREN){
-		    getsym();
-		} else error(33);  //Missing '('.
+		if (sym == SYM_LPAREN)
+		{
+			getsym();
+		}
+		else
+			error(33); //Missing '('.
 
 		set1 = createset(SYM_RPAREN, SYM_NULL);
 		set = uniteset(set1, fsys);
@@ -875,9 +862,12 @@ void statement(symset fsys)
 		destroyset(set1);
 		destroyset(set);
 
-        if (sym == SYM_RPAREN){
-            getsym();
-        } else error(33);  //Missing ')'.
+		if (sym == SYM_RPAREN)
+		{
+			getsym();
+		}
+		else
+			error(33); //Missing ')'.
 
 		if (sym == SYM_THEN)
 		{
@@ -951,7 +941,8 @@ void statement(symset fsys)
 		{
 			getsym();
 		}
-		else error(33);
+		else
+			error(33);
 		if (sym == SYM_RPAREN)
 		{
 			gen(PRT, 0, 0);
@@ -962,17 +953,17 @@ void statement(symset fsys)
 			set = createset(SYM_COMMA, SYM_RPAREN, SYM_NULL);
 			set1 = uniteset(fsys, set);
 			expression(set);
-            destroyset(set1);
-            destroyset(set);
+			destroyset(set1);
+			destroyset(set);
 			gen(PRT, 0, 1);
 			while (sym == SYM_COMMA)
 			{
-                set = createset(SYM_COMMA, SYM_RPAREN, SYM_NULL);
-                set1 = uniteset(fsys, set);
-                getsym();
+				set = createset(SYM_COMMA, SYM_RPAREN, SYM_NULL);
+				set1 = uniteset(fsys, set);
+				getsym();
 				expression(set);
-                destroyset(set1);
-                destroyset(set);
+				destroyset(set1);
+				destroyset(set);
 				gen(PRT, 0, 1);
 			}
 			if (sym == SYM_RPAREN)
@@ -981,7 +972,7 @@ void statement(symset fsys)
 			}
 			else
 			{
-				error(22);		//missing ')'
+				error(22); //missing ')'
 			}
 		}
 	}
@@ -1293,15 +1284,17 @@ void interpret()
 			top--;
 			break;
 		case RDM:
-		    if (i.a == 0)
-		        stack[++top] = rand();
-		    else stack[++top] = rand() % i.a;
-            break;
+			if (i.a == 0)
+				stack[++top] = rand();
+			else
+				stack[++top] = rand() % i.a;
+			break;
 		case PRT:
 			if (i.a == 0)
-		        printf("\n");
-		    else printf("%d\n", stack[top--]);
-            break;
+				printf("\n");
+			else
+				printf("%d\n", stack[top--]);
+			break;
 		} // switch
 	} while (pc);
 
@@ -1357,18 +1350,18 @@ void main()
 
 	for (int n = 1; n <= goto_num; n++)
 	{ //为每个goto产生的JMP指令回填跳转地址
-		int m = lable_num;
-		strcpy(lable_name[0], goto_dest[n]); //将goto的目标作为哨兵
-		while (strcmp(lable_name[m--], goto_dest[n]) != 0)
+		int m = label_num;
+		strcpy(label_name[0], goto_dest[n]); //将goto的目标作为哨兵
+		while (strcmp(label_name[m--], goto_dest[n]) != 0)
 			;
 
 		if (++m)
 		{
-			code[goto_cx[n]].a = lable_cx[m]; //回填
+			code[goto_cx[n]].a = label_cx[m]; //回填
 		}
 		else
 		{
-			error(38); //不存在这样的lable
+			error(38); //不存在这样的label
 		}
 	}
 

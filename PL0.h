@@ -166,7 +166,6 @@ int err;
 int cx; // index of current instruction to be generated.
 int level = 0;
 int tx = 0; //index of table
-int ax = 0; //index of array_table
 
 char line[80];
 
@@ -241,9 +240,7 @@ typedef struct mask_array //array使用
 
 mask_array lastArray;		   //最后读到的数组声明
 mask_array curArray;		   //当前正在分析的数组
-mask_array array_table[TXMAX]; //专门存放数组的符号表
 int cur_dim;
-int array_link[MAXDIM];
 
 FILE *infile;
 

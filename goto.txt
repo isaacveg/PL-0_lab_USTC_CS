@@ -1,7 +1,13 @@
-var i,j;
+var i[3];
+
+procedure p;
 begin
 goto start;
-i := 0;
+  i[0] := 2;
+end;
+
+begin
+  i[0] := 1;
+call p;
 start:
-i := 1;
 end.
