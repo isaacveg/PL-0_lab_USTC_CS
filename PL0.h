@@ -148,11 +148,11 @@ char *err_msg[] =
 		/* 31 */ "",
 		/* 32 */ "There are too many levels.",
 		/* 33 */ "Missing '('.",
-		/* 34 */ "the same lable has been used.",
-		/* 35 */ "too many lables.",
+		/* 34 */ "the same label has been used.",
+		/* 35 */ "too many labels.",
 		/* 36 */ "Missing ';'.",
 		/* 37 */ "too many goto.",
-		/* 38 */ "goto undifined lable."};
+		/* 38 */ "goto undefined label."};
 
 //////////////////////////////////////////////////////////////////////
 char ch;			   // last character read
@@ -247,15 +247,15 @@ int array_link[MAXDIM];
 
 FILE *infile;
 
-#define NLABLE 20					   //lable的最大数量
+#define NLABEL 20					   //label的最大数量
 #define NGOTO 20					   //goto的最大数量
 char goto_dest[NGOTO + 1][MAXIDLEN];   //记录每个goto的目标
 int goto_cx[NGOTO + 1];				   //记录每个goto所在位置是第几条指令
 int goto_num;						   //记录goto的总数量
-char lable_name[NLABLE + 1][MAXIDLEN]; //记录每个lable的名字
-int lable_cx[NLABLE + 1];			   //记录每个lable所在位置是第几条指令
-int lable_num;						   //记录lable的总数量
-//由于分析goto时，lable不一定已经分析过，因此无法立即生成指令
+char label_name[NLABEL + 1][MAXIDLEN]; //记录每个label的名字
+int label_cx[NLABEL + 1];			   //记录每个label所在位置是第几条指令
+int label_num;						   //记录label的总数量
+//由于分析goto时，label不一定已经分析过，因此无法立即生成指令
 //采取回填策略，在分析结束、执行之前，对goto产生的jmp指令的目标进行统一回填
 
 // EOF PL0.h
