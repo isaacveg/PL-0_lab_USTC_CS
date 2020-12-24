@@ -64,8 +64,7 @@ void GetChar(void)
 	lastCharacter = line[++characterCount];
 }
 
-//////////////////////////////////////////////////////////////////////
-// gets a symbol from input stream.
+//获取输入符号
 void GetSymbol(void)
 {
 	int i, k;
@@ -184,7 +183,7 @@ void GetSymbol(void)
 		GetChar();
 	}
 	else if (lastCharacter == '/')
-	{	
+	{
 		//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
 		GetChar();
 		if (lastCharacter == '/') // 读到"//"
@@ -422,14 +421,13 @@ void ConstDeclaration()
 				GetSymbol();
 			}
 			else
-				Error(2); // There must be a number to follow '='.
+				Error(2);	//There must be a number to follow '='.
 		}
 		else
-			Error(3); // There must be an '=' to follow the identifier.
+			Error(3);	//There must be an '=' to follow the identifier.
 	}
 	else
-		Error(4);
-	// There must be an identifier to follow 'const', 'var', or 'procedure'.
+		Error(4);	//There must be an identifier to follow 'const', 'var', or 'procedure'.
 }
 
 //维度声明 
@@ -454,7 +452,7 @@ int DimConst()
 			return lastNumber;
 	}
 	else
-		Error(28);
+		Error(29);	//expected a constant or a number.
 	return 0;
 }
 
@@ -469,7 +467,7 @@ void DimDeclaration(void)
 		lastArray.attribute->dimDateArray[currentArrayDim++] = value;
 		GetSymbol();
 		if (lastSymbol != SYM_RBRACK)
-			Error(27);	//expected ']'
+			Error(30);	//expected ']'.
 		else
 		{
 			GetSymbol();
@@ -532,7 +530,7 @@ void ListCode(int from, int to)
 
 //匹配数组的维度信息，并将偏移量置于栈顶
 void MatchArrayDim(symset fsys)
-{ 
+{
 	//匹配数组的维度信息，并将偏移量置于栈顶
 	symset set;
 	currentArrayDim = 0;
@@ -644,7 +642,7 @@ void Factor(symset fsys)
 				GetSymbol();
 			}
 			else
-				Error(33);
+				Error(33);	//Missing '('.
 			if (lastSymbol == SYM_RPAREN)
 			{
 				GetSymbol();
@@ -659,7 +657,7 @@ void Factor(symset fsys)
 					GetSymbol();
 				}
 				else
-					Error(22);
+					Error(22);	//Missing ')'.
 			}
 		}
 		Test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
@@ -697,7 +695,7 @@ void Expression(symset fsys)
 	int addop;
 	symset set;
 
-	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS,SYM_NULL));
+	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS, SYM_NULL));
 
 	Term(set);
 	while (lastSymbol == SYM_PLUS || lastSymbol == SYM_MINUS)
@@ -743,32 +741,32 @@ void Condition(symset fsys)
 		destroyset(set);
 		if (inset(lastSymbol, relset))
 		{
-            relop = lastSymbol;
-            GetSymbol();
-            set = uniteset(relset, fsys);
-            Expression(set);
-            destroyset(set);
-            switch (relop)
-            {
-                case SYM_EQU:
-                    Generate(OPR, 0, OPR_EQU);
-                    break;
-                case SYM_NEQ:
-                    Generate(OPR, 0, OPR_NEQ);
-                    break;
-                case SYM_LES:
-                    Generate(OPR, 0, OPR_LES);
-                    break;
-                case SYM_GEQ:
-                    Generate(OPR, 0, OPR_GEQ);
-                    break;
-                case SYM_GTR:
-                    Generate(OPR, 0, OPR_GTR);
-                    break;
-                case SYM_LEQ:
-                    Generate(OPR, 0, OPR_LEQ);
-                    break;
-		    }
+			relop = lastSymbol;
+			GetSymbol();
+			set = uniteset(relset, fsys);
+			Expression(set);
+			destroyset(set);
+			switch (relop)
+			{
+			case SYM_EQU:
+				Generate(OPR, 0, OPR_EQU);
+				break;
+			case SYM_NEQ:
+				Generate(OPR, 0, OPR_NEQ);
+				break;
+			case SYM_LES:
+				Generate(OPR, 0, OPR_LES);
+				break;
+			case SYM_GEQ:
+				Generate(OPR, 0, OPR_GEQ);
+				break;
+			case SYM_GTR:
+				Generate(OPR, 0, OPR_GTR);
+				break;
+			case SYM_LEQ:
+				Generate(OPR, 0, OPR_LEQ);
+				break;
+			}
 		}
 	}
 } // condition
@@ -776,37 +774,37 @@ void Condition(symset fsys)
 //与优先级条件
 void AndCondition(symset fsys)
 {
-    symset set,set1;
+	symset set, set1;
 
-    set1 = createset(SYM_AND,SYM_NULL);
-    set = uniteset(set1, fsys);
-    Condition(set);
-    while (lastSymbol == SYM_AND)
-    {
-        GetSymbol();
-        Condition(set);
-        Generate(OPR,0,OPR_AND);
-    }
-    destroyset(set1);
-    destroyset(set);
+	set1 = createset(SYM_AND, SYM_NULL);
+	set = uniteset(set1, fsys);
+	Condition(set);
+	while (lastSymbol == SYM_AND)
+	{
+		GetSymbol();
+		Condition(set);
+		Generate(OPR, 0, OPR_AND);
+	}
+	destroyset(set1);
+	destroyset(set);
 }
 
 //或优先级条件
 void OrCondition(symset fsys)
 {
-    symset set,set1;
+	symset set, set1;
 
-    set1 = createset(SYM_OR,SYM_NULL);
-    set = uniteset(set1, fsys);
-    AndCondition(set);
-    while (lastSymbol == SYM_OR)
-    {
-        GetSymbol();
-        AndCondition(set);
-        Generate(OPR,0,OPR_OR);
-    }
-    destroyset(set1);
-    destroyset(set);
+	set1 = createset(SYM_OR, SYM_NULL);
+	set = uniteset(set1, fsys);
+	AndCondition(set);
+	while (lastSymbol == SYM_OR)
+	{
+		GetSymbol();
+		AndCondition(set);
+		Generate(OPR, 0, OPR_OR);
+	}
+	destroyset(set1);
+	destroyset(set);
 }
 
 //语句
@@ -839,78 +837,77 @@ void Statement(symset fsys)
 		}
 		else
 		{
-			//变量
 			mask* mk;
 			if (!(i = Position(lastIdName)))
 				Error(11);	 //Undeclared identifier.
 			else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_REFERENCE)
 			{
-								{			   //开始对lable的处理
-					set1 = createset(SYM_COLON, SYM_NULL);
-					fsys = uniteset(set1, fsys);
-					destroyset(set1);
+				//label
+				set1 = createset(SYM_COLON, SYM_NULL);
+				fsys = uniteset(set1, fsys);
+				destroyset(set1);
 
-					strcpy(labelNameTable[0], lastIdName);
-					int k = labelCount;
-					while (strcmp(labelNameTable[k--], lastIdName) != 0) //检查是否有重复的lable
-						;
+				strcpy(labelNameTable[0], lastIdName);
+				int k = labelCount;
+				while (strcmp(labelNameTable[k--], lastIdName) != 0); //检查是否有重复的lable					
 
-					if (++k)
-					{
-						Error(34); //有重复的lable
-					}
+				if (++k)
+					Error(34);	//The same label has been used.
+				else
+				{
+					labelCount++;
+					if (labelCount > MAXLABLE)
+						Error(35);	//There are too many labels.
 					else
 					{
-						labelCount++;
-						if (labelCount > MAXLABLE)
-						{
-							Error(35); //lable过多
-						}
-						else
-						{
-							strcpy(labelNameTable[labelCount], lastIdName);
-							labelIndexTable[labelCount] = currentInstructionIndex; //存放lable对应的地址
-						}
-						GetSymbol();
-						Test(fsys, phi, 19);
-						Statement(fsys);
-						return; //完成对 lable: 的匹配
+						strcpy(labelNameTable[labelCount], lastIdName);
+						labelIndexTable[labelCount] = currentInstructionIndex; //存放lable对应的地址
 					}
-				} //else 至此完成对lable的处理
-			}
-			{
+					GetSymbol();
+					Test(fsys, phi, 19);
+					Statement(fsys);
+					return; //完成对 lable: 的匹配
+				}
+
 				Error(12);	//Illegal assignment.
 				i = 0;
 			}
-			GetSymbol();
-			if (lastSymbol == SYM_BECOMES)
-				GetSymbol();
 			else
-				Error(13);	//':='expected.
-			if (table[i].kind == ID_VARIABLE)
 			{
-				Expression(fsys);
-				mk = (mask*)& table[i];
-				if (i)
-					Generate(STO, currentLevel - mk->level, mk->address);
-			}
-			else if (table[i].kind == ID_REFERENCE)
-			{
-				mk = (mask*)& table[i];
-				if (lastSymbol == SYM_IDENTIFIER)
-					if ((i = Position(lastIdName)) == 0)
-						Error(11); // Undeclared identifier.
-					else
-						if (table[i].kind != ID_VARIABLE)
-							Error(28);	//The reference must be assigned by an identifier.
-						else
-						{
-							Generate(LIT, 0, Position(lastIdName));
-							Generate(STO, currentLevel - mk->level, mk->address);
-							GetSymbol();
-						}
+				//变量
+				i = Position(lastIdName);
+				GetSymbol();
+				if (lastSymbol == SYM_BECOMES)
+					GetSymbol();
 				else
-					Error(28);	//The reference must be assigned by an identifier.
+					Error(13);	//':='expected.
+				if (table[i].kind == ID_VARIABLE)
+				{
+					//值类型
+					Expression(fsys);
+					mk = (mask*)& table[i];
+					if (i)
+						Generate(STO, currentLevel - mk->level, mk->address);
+				}
+				else if (table[i].kind == ID_REFERENCE)
+				{
+					//引用类型
+					mk = (mask*)& table[i];
+					if (lastSymbol == SYM_IDENTIFIER)
+						if ((i = Position(lastIdName)) == 0)
+							Error(11); // Undeclared identifier.
+						else
+							if (table[i].kind != ID_VARIABLE)
+								Error(28);	//The reference must be assigned by an identifier.
+							else
+							{
+								Generate(LIT, 0, Position(lastIdName));
+								Generate(STO, currentLevel - mk->level, mk->address);
+								GetSymbol();
+							}
+					else
+						Error(28);	//The reference must be assigned by an identifier.
+				}
 			}
 		}
 	}
@@ -937,12 +934,12 @@ void Statement(symset fsys)
 	}
 	else if (lastSymbol == SYM_IF)
 	{
-		// if statement
+		//if statement
 		GetSymbol();
 
-		if (lastSymbol == SYM_LPAREN){
-		    GetSymbol();
-		} else Error(33);  //Missing '('.
+		if (lastSymbol == SYM_LPAREN)
+			GetSymbol();
+		else Error(33);  //Missing '('.
 
 		set1 = createset(SYM_RPAREN, SYM_NULL);
 		set = uniteset(set1, fsys);
@@ -950,9 +947,9 @@ void Statement(symset fsys)
 		destroyset(set1);
 		destroyset(set);
 
-        if (lastSymbol == SYM_RPAREN){
-            GetSymbol();
-        } else Error(33);  //Missing ')'.
+		if (lastSymbol == SYM_RPAREN)
+			GetSymbol();
+		else Error(33);  //Missing ')'.
 
 		if (lastSymbol == SYM_THEN)
 			GetSymbol();
@@ -975,7 +972,7 @@ void Statement(symset fsys)
 			if (lastSymbol == SYM_SEMICOLON)
 				GetSymbol();
 			else
-				Error(10);
+				Error(10);	//';' expected.
 			Statement(set);
 		}
 		destroyset(set1);
@@ -987,7 +984,7 @@ void Statement(symset fsys)
 	}
 	else if (lastSymbol == SYM_WHILE)
 	{
-		// while statement
+		//while statement
 		cx1 = currentInstructionIndex;
 		GetSymbol();
 		set1 = createset(SYM_DO, SYM_NULL);
@@ -998,24 +995,19 @@ void Statement(symset fsys)
 		cx2 = currentInstructionIndex;
 		Generate(JPC, 0, 0);
 		if (lastSymbol == SYM_DO)
-		{
 			GetSymbol();
-		}
 		else
-		{
 			Error(18);	//'do' expected.
-		}
 		Statement(fsys);
 		Generate(JMP, 0, cx1);
 		code[cx2].a = currentInstructionIndex;
 	}
 	else if (lastSymbol == SYM_PRT)
-	{ // while statement
+	{
+		//while statement
 		GetSymbol();
 		if (lastSymbol == SYM_LPAREN)
-		{
 			GetSymbol();
-		}
 		else Error(33);
 		if (lastSymbol == SYM_RPAREN)
 		{
@@ -1027,50 +1019,40 @@ void Statement(symset fsys)
 			set = createset(SYM_COMMA, SYM_RPAREN, SYM_NULL);
 			set1 = uniteset(fsys, set);
 			Expression(set);
-            destroyset(set1);
-            destroyset(set);
+			destroyset(set1);
+			destroyset(set);
 			Generate(PRT, 0, 1);
 			while (lastSymbol == SYM_COMMA)
 			{
-                set = createset(SYM_COMMA, SYM_RPAREN, SYM_NULL);
-                set1 = uniteset(fsys, set);
-                GetSymbol();
+				set = createset(SYM_COMMA, SYM_RPAREN, SYM_NULL);
+				set1 = uniteset(fsys, set);
+				GetSymbol();
 				Expression(set);
-                destroyset(set1);
-                destroyset(set);
+				destroyset(set1);
+				destroyset(set);
 				Generate(PRT, 0, 1);
 			}
 			if (lastSymbol == SYM_RPAREN)
-			{
 				GetSymbol();
-			}
 			else
-			{
 				Error(22);		//missing ')'
-			}
 		}
 	}
 	else if (lastSymbol == SYM_GOTO)
 	{
 		GetSymbol();
 		if (lastSymbol != SYM_IDENTIFIER)
-		{
-			Error(8);
-		}
+			Error(8);	//Follow the Statement is an incorrect symbol.
 		else
 		{
 			GetSymbol();
 			if (lastSymbol != SYM_SEMICOLON)
-			{
-				Error(36); //缺少';'
-			}
+				Error(5);	//Missing ',' or ';'.
 			else //语法正确
 			{
 				jumpInsCount++;
-				if (jumpInsCount > MAXGOTOINS)
-				{
-					Error(37); //goto过多
-				}
+				if (jumpInsCount > MAXJUMPINS)
+					Error(37);	//There are too many 'goto' instruments.
 				else
 				{
 					strcpy(jumpInsNameTable[jumpInsCount], lastIdName);
@@ -1176,11 +1158,9 @@ void Block(symset fsys)
 				destroyset(set);
 			}
 			else
-			{
-				Error(5); // Missing ',' or ';'.
-			}
-		}			   // while
-		dateIndex = block_dx; //restore dx after handling procedure call!
+				Error(5);	//Missing ',' or ';'.
+		}
+		dateIndex = block_dx;	//restore dx after handling procedure call!
 		set1 = createset(SYM_IDENTIFIER, SYM_NULL);
 		set = uniteset(statbegsys, set1);
 		Test(set, declbegsys, 7);
@@ -1197,8 +1177,8 @@ void Block(symset fsys)
 	Statement(set);
 	destroyset(set1);
 	destroyset(set);
-	Generate(OPR, 0, OPR_RET); // return
-	Test(fsys, phi, 8);	  // test for error: Follow the statement is an incorrect symbol.
+	Generate(OPR, 0, OPR_RET);	//return
+	Test(fsys, phi, 8);	  //test for error: Follow the statement is an incorrect symbol.
 	ListCode(codeIndex, currentInstructionIndex);
 }
 
@@ -1373,15 +1353,15 @@ void Interpret()
 			top--;
 			break;
 		case RDM:
-		    if (i.a == 0)
-		        stack[++top] = rand();
-		    else stack[++top] = rand() % i.a;
-            break;
+			if (i.a == 0)
+				stack[++top] = rand();
+			else stack[++top] = rand() % i.a;
+			break;
 		case PRT:
 			if (i.a == 0)
-		        printf("\n");
-		    else printf("%d\n", stack[top--]);
-            break;
+				printf("\n");
+			else printf("%d\n", stack[top--]);
+			break;
 		} // switch
 	} while (pc);
 
@@ -1434,24 +1414,21 @@ void main()
 	destroyset(facbegsys);
 
 	for (int n = 1; n <= jumpInsCount; n++)
-	{ //为每个goto产生的JMP指令回填跳转地址
+	{
+		//为每个goto产生的JMP指令回填跳转地址
 		int m = labelCount;
-		strcpy(labelNameTable[0], jumpInsNameTable[n]); //将goto的目标作为哨兵
-		while (strcmp(labelNameTable[m--], jumpInsNameTable[n]) != 0)
-			;
+		//将goto的目标作为哨兵
+		strcpy(labelNameTable[0], jumpInsNameTable[n]);
+		while (strcmp(labelNameTable[m--], jumpInsNameTable[n]) != 0);
 
 		if (++m)
-		{
 			code[jumpInsIndexTable[n]].a = labelIndexTable[m]; //回填
-		}
 		else
-		{
-			Error(38); //不存在这样的lable
-		}
+			Error(38);	//The label is undefined.
 	}
 
 	if (lastSymbol != SYM_PERIOD)
-		Error(9); // '.' expected.
+		Error(9);	//'.' expected.
 	if (errorCount == 0)
 	{
 		hbin = fopen("hbin.txt", "w");

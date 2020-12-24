@@ -11,7 +11,7 @@
 #define STACKSIZE 1000		//最大存储量
 #define MAXDIM 10			//数组维度上限
 #define MAXLABLE 20			//标签数目上限
-#define MAXGOTOINS 20			//跳转命令上限
+#define MAXJUMPINS 20			//跳转命令上限
 
 enum symtype
 {
@@ -147,16 +147,16 @@ char* errorMessage[] =
 	/* 26 */ "Procedure identifier can not be in an array declaration.",
 	/* 27 */ "There must be an identifier to follow '&'.",
 	/* 28 */ "The reference must be assigned by an identifier.",
-	/* 29 */ "expected a constant or a number",
-	/* 30 */ "",
+	/* 29 */ "expected a constant or a number.",
+	/* 30 */ "expected ']'.",
 	/* 31 */ "",
 	/* 32 */ "There are too many levels." ,
 	/* 33 */ "Missing '('.",
-	/* 34 */ "the same label has been used.",
-	/* 35 */ "too many labels.",
+	/* 34 */ "The same label has been used.",
+	/* 35 */ "There are too many labels.",
 	/* 36 */ "",
-	/* 37 */ "too many goto.",
-	/* 38 */ "goto undifined lable."
+	/* 37 */ "There are too many 'goto' instruments.",
+	/* 38 */ "The label is undefined."
 };
 
 char lastCharacter;				//上次读取的字符
@@ -267,8 +267,8 @@ int currentArrayDim;			//当前分析的数组维度大小
 采取回填策略，在分析结束、执行之前，对goto产生的jmp指令的目标进行统一回填
 */
 
-char jumpInsNameTable[MAXGOTOINS + 1][MAXIDLEN];	//跳转指令名称集合
-int jumpInsIndexTable[MAXGOTOINS + 1];				//跳转指令位置集合
+char jumpInsNameTable[MAXJUMPINS + 1][MAXIDLEN];	//跳转指令名称集合
+int jumpInsIndexTable[MAXJUMPINS + 1];				//跳转指令位置集合
 int jumpInsCount;						   			//跳转指令数目
 char labelNameTable[MAXLABLE + 1][MAXIDLEN]; 		//标签名称集合
 int labelIndexTable[MAXLABLE + 1];			   		//标签位置集合
