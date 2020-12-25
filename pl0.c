@@ -64,11 +64,18 @@ void GetCharacter(void)
 	lastCharacter = line[++characterCount];
 }
 
+int preSymbolCount = 0;
+int symbolBuffer[10] = {0};
 //获取输入符号
 void GetSymbol(void)
 {
 	int i, k;
 	char a[MAXIDLEN + 1];
+	if (preSymbolCount > 0)
+	{
+		lastSymbol = symbolBuffer[--preSymbolCount];
+		return;
+	}
 
 	while (lastCharacter == ' ' || lastCharacter == '\t')
 		GetCharacter();
@@ -886,13 +893,9 @@ void Statement(symset fsys)
 					Error(11); // Undeclared identifier.
 				else		   //lastIdName是一个label
 				{			   //开始对label的处理
-					set1 = createset(SYM_COLON, SYM_NULL);
-					fsys = uniteset(set1, fsys);
-					destroyset(set1);
-
-					strcpy(label_name[0], lastIdName);
-					int k = label_num;
-					while (strcmp(label_name[k--], lastIdName) != 0) //检查是否有重复的label
+					strcpy(labelNameTab[0], lastIdName);
+					int k = labelCount;
+					while (strcmp(labelNameTab[k--], lastIdName) != 0) //检查是否有重复的label
 						;
 
 					if (++k)
@@ -901,18 +904,17 @@ void Statement(symset fsys)
 					}
 					else
 					{
-						label_num++;
-						if (label_num > MAXLABEL)
+						labelCount++;
+						if (labelCount > MAXLABEL)
 						{
 							Error(35); //label过多
 						}
 						else
 						{
-							strcpy(label_name[label_num], lastIdName);
-							label_cx[label_num] = currentInstructionIndex; //存放label对应的地址
+							strcpy(labelNameTab[labelCount], lastIdName);
+							labelIndexTab[labelCount] = currentInstructionIndex; //存放label对应的地址
 						}
 						GetSymbol();
-						Test(fsys, phi, 19);
 						Statement(fsys);
 						return; //完成对 label: 的匹配
 					}
@@ -987,7 +989,32 @@ void Statement(symset fsys)
 		cx1 = currentInstructionIndex;
 		Generate(JPC, 0, 0);
 		Statement(fsys);
-		code[cx1].a = currentInstructionIndex;
+				
+		if (lastSymbol == SYM_SEMICOLON)
+		{
+			GetSymbol();
+		}
+		else
+		{
+			Error(10);
+		}
+
+		if (lastSymbol == SYM_ELSE)
+		{
+			int cx2 = currentInstructionIndex;
+			Generate(JMP, 0, 0);
+			code[cx1].a = currentInstructionIndex;
+			GetSymbol();
+			Statement(fsys);
+			code[cx2].a = currentInstructionIndex;
+		}
+		else
+		{
+			symbolBuffer[preSymbolCount++] = lastSymbol;
+			lastSymbol = SYM_SEMICOLON;
+			code[cx1].a = currentInstructionIndex;
+		}
+
 	}
 	else if (lastSymbol == SYM_BEGIN)
 	{ // Block
@@ -1464,7 +1491,7 @@ void main()
 
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
-	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_IDENTIFIER, SYM_GOTO, SYM_NULL);
+	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_GOTO, SYM_NULL);
 	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_RDM, SYM_NULL);
 
 	errorCount = characterCount = currentInstructionIndex = lineLenth = 0; // initialize global variables
@@ -1488,14 +1515,14 @@ void main()
 
 	for (int n = 1; n <= gotoInstCount; n++)
 	{ //为每个goto产生的JMP指令回填跳转地址
-		int m = label_num;
-		strcpy(label_name[0], gotoInstNameTab[n]); //将goto的目标作为哨兵
-		while (strcmp(label_name[m--], gotoInstNameTab[n]) != 0)
+		int m = labelCount;
+		strcpy(labelNameTab[0], gotoInstNameTab[n]); //将goto的目标作为哨兵
+		while (strcmp(labelNameTab[m--], gotoInstNameTab[n]) != 0)
 			;
 
 		if (++m)
 		{
-			code[gotoInstIndexTab[n]].a = label_cx[m]; //回填
+			code[gotoInstIndexTab[n]].a = labelIndexTab[m]; //回填
 		}
 		else
 		{

@@ -80,7 +80,7 @@ enum opcode
 	CAL,	//用于过程调用的指令
 	INT,	//在数据栈中分配存贮空间
 	JMP,	//用于if, while 语句的条件或无条件控制转移指令
-	JPC,	//一组算术或逻辑运算指令
+	JPC,	//栈顶值为0则跳转
 	LDA,	//将栈顶指向的内存的值置于栈顶
 	STA,	//将栈顶的值赋予栈顶-1指向的内存
 	RDM,	//产生随机数
@@ -267,9 +267,9 @@ int currentArrayDim;		//当前分析的数组维度大小
 char gotoInstNameTab[MAXGOTOINS + 1][MAXIDLEN];		//goto指令名称集合
 int gotoInstIndexTab[MAXGOTOINS + 1];				//goto指令索引集合
 int gotoInstCount;									//goto指令数目
-char label_name[MAXLABEL + 1][MAXIDLEN];			//标签名称集合
-int label_cx[MAXLABEL + 1];							//标签索引集合
-int label_num;										//标签数目
+char labelNameTab[MAXLABEL + 1][MAXIDLEN];			//标签名称集合
+int labelIndexTab[MAXLABEL + 1];					//标签索引集合
+int labelCount;										//标签数目
 
 //编译文件指针
 FILE* infile;

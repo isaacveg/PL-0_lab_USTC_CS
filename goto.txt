@@ -1,7 +1,41 @@
-var i,j;
+var i;
 begin
-goto start;
-i := 0;
-start:
-i := 1;
+	
+	i := 0;
+	goto start;
+	print(1000);
+	while(i<40) do
+	  begin
+		 start:
+		 if (i > 20) then goto finish;
+		 else begin i := i + 5; print(i); end;
+	  end;
+	finish: 
+	print();print(i,100);
+	print();
+	i := 0;
+	new1:
+	  begin
+		 i := i + 6;
+		 print(i);
+		 if(i < 20) then goto new1;
+	  end;
+	
+	print();
+	
+	i := 0;
+  
+	  begin
+		Loopbegin:
+		if (i>10) then goto Loopend;
+		print(i*5);
+		i := i + 1;
+		goto Loopbegin;
+		k: i := i + 2;
+Loopend:
+	  end;
+	
+	print();
+  print(i);
+  
 end.
