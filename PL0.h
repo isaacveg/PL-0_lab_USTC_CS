@@ -12,7 +12,7 @@
 #define MAXLEVEL 32		 // maximum depth of nesting block
 #define CXMAX 500		 // size of code array
 
-#define MAXSYM 40 // maximum number of symbols
+#define MAXSYM 41 // maximum number of symbols
 
 #define STACKSIZE 1000 // maximum storage
 
@@ -57,7 +57,8 @@ enum symtype
 	SYM_ELSE,	// else
 	SYM_RDM,	// random
 	SYM_PRT,	// print
-	SYM_COLON	// :
+	SYM_COLON,	// :
+	SYM_QUOTE,	//&
 };
 
 enum idtype
@@ -65,7 +66,8 @@ enum idtype
 	ID_CONSTANT,
 	ID_VARIABLE,
 	ID_PROCEDURE,
-	ID_ARRAY
+	ID_ARRAY,
+	ID_REFERENCE
 };
 
 enum opcode
@@ -77,7 +79,7 @@ enum opcode
 	CAL,
 	INT,
 	JMP,
-	JPC,
+	JPC, //栈顶值为0则跳转
 	LDA,
 	STA,
 	RDM, //random
@@ -143,9 +145,9 @@ char *err_msg[] =
 		/* 26 */ "Procedure identifier can not be in an array declaration.",
 		/* 27 */ "expected ']'.",
 		/* 28 */ "expected a constant or a number.",
-		/* 29 */ "",
-		/* 30 */ "",
-		/* 31 */ "",
+		/* 29 */ "There must be an identify to follow '&'.",
+		/* 30 */ "The reference does not initial.",
+		/* 31 */ "There must be a identify to follow '='.",
 		/* 32 */ "There are too many levels.",
 		/* 33 */ "Missing '('.",
 		/* 34 */ "the same label has been used.",
@@ -238,8 +240,8 @@ typedef struct mask_array //array使用
 	attribute *attr;
 } mask_array;
 
-mask_array lastArray;		   //最后读到的数组声明
-mask_array curArray;		   //当前正在分析的数组
+mask_array lastArray; //最后读到的数组声明
+mask_array curArray;  //当前正在分析的数组
 int cur_dim;
 
 FILE *infile;

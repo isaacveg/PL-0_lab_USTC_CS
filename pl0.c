@@ -52,11 +52,18 @@ void getch(void)
 
 //////////////////////////////////////////////////////////////////////
 // gets a symbol from input stream.
+int pre_sym_count = 0;
+int sym_stack[10] = {0};
+
 void getsym(void)
 {
 	int i, k;
 	char a[MAXIDLEN + 1];
-
+	if (pre_sym_count > 0)
+	{
+		sym = sym_stack[--pre_sym_count];
+		return;
+	}
 	while (ch == ' ' || ch == '\t')
 		getch();
 
@@ -145,6 +152,8 @@ void getsym(void)
 			sym = SYM_AND; // &&
 			getch();
 		}
+		else
+			sym = SYM_QUOTE;
 	}
 	else if (ch == '|')
 	{
@@ -306,6 +315,10 @@ void enter(int kind)
 		dx += mk_a->attr->sum;									 //为数组开辟sum大小的空间
 		lastArray.attr = (attribute *)malloc(sizeof(attribute)); //先前为lastArray.attr开辟的空间已经被table使用，开辟新的空间
 		break;
+	case ID_REFERENCE:
+		mk = (mask *)&table[tx];
+		mk->level = level;
+		break;
 	} // switch
 } // enter
 
@@ -422,6 +435,37 @@ void vardeclaration(void)
 		else //标识符是变量
 			enter(ID_VARIABLE);
 	}
+	else if (sym == SYM_QUOTE)
+	{
+		getsym();
+		if (sym == SYM_IDENTIFIER)
+		{
+			enter(ID_REFERENCE);
+			getsym();
+			if (sym == SYM_EQU)
+			{
+				getsym();
+				if (sym == SYM_IDENTIFIER)
+				{
+					int i = position(id);
+					if (i != 0)
+					{
+						//对引用类型所指向的地址进行回填
+						((mask *)table + tx)->address = ((mask *)table + i)->address;
+						getsym();
+					}
+					else
+						error(11); //Undeclared identifier.
+				}
+				else
+					error(31); //There must be a identify to follow '='.
+			}
+			else
+				error(30); //The reference does not initial.
+		}
+		else
+			error(29); //There must be an identify to follow '&'.
+	}
 	else
 	{
 		error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
@@ -446,7 +490,7 @@ void match_array_dim(symset fsys)
 { //匹配数组的维度信息，并将偏移量置于栈顶
 	symset set;
 	cur_dim = 0;
-	gen(LIT, 0, 0);
+	gen(LIT, 0, 0); //存放偏移量
 	while (sym == SYM_LBRACK)
 	{
 		cur_dim++;
@@ -503,6 +547,7 @@ void factor(symset fsys)
 					case ID_CONSTANT:
 						gen(LIT, 0, table[i].value);
 						break;
+					case ID_REFERENCE:
 					case ID_VARIABLE:
 						mk = (mask *)&table[i];
 						gen(LOD, level - mk->level, mk->address);
@@ -765,10 +810,6 @@ void statement(symset fsys)
 					error(11); // Undeclared identifier.
 				else		   //id是一个label
 				{			   //开始对label的处理
-					set1 = createset(SYM_COLON, SYM_NULL);
-					fsys = uniteset(set1, fsys);
-					destroyset(set1);
-
 					strcpy(label_name[0], id);
 					int k = label_num;
 					while (strcmp(label_name[k--], id) != 0) //检查是否有重复的label
@@ -791,7 +832,6 @@ void statement(symset fsys)
 							label_cx[label_num] = cx; //存放label对应的地址
 						}
 						getsym();
-						test(fsys, phi, 19);
 						statement(fsys);
 						return; //完成对 label: 的匹配
 					}
@@ -879,8 +919,33 @@ void statement(symset fsys)
 		}
 		cx1 = cx;
 		gen(JPC, 0, 0);
+
 		statement(fsys);
-		code[cx1].a = cx;
+
+		if (sym == SYM_SEMICOLON)
+		{
+			getsym();
+		}
+		else
+		{
+			error(10);
+		}
+
+		if (sym == SYM_ELSE)
+		{
+			int cx2 = cx;
+			gen(JMP, 0, 0);
+			code[cx1].a = cx;
+			getsym();
+			statement(fsys);
+			code[cx2].a = cx;
+		}
+		else
+		{
+			sym_stack[pre_sym_count++] = sym;
+			sym = SYM_SEMICOLON;
+			code[cx1].a = cx;
+		}
 	}
 	else if (sym == SYM_BEGIN)
 	{ // block
@@ -915,13 +980,30 @@ void statement(symset fsys)
 	{ // while statement
 		cx1 = cx;
 		getsym();
-		set1 = createset(SYM_DO, SYM_NULL);
+
+		if (sym == SYM_LPAREN)
+		{
+			getsym();
+		}
+		else
+			error(33); //Missing '('.
+
+		set1 = createset(SYM_RPAREN, SYM_NULL);
 		set = uniteset(set1, fsys);
-		condition(set);
+		or_condition(set);
 		destroyset(set1);
 		destroyset(set);
+
 		cx2 = cx;
 		gen(JPC, 0, 0);
+
+		if (sym == SYM_RPAREN)
+		{
+			getsym();
+		}
+		else
+			error(33); //Missing ')'.
+
 		if (sym == SYM_DO)
 		{
 			getsym();
@@ -930,6 +1012,7 @@ void statement(symset fsys)
 		{
 			error(18); // 'do' expected.
 		}
+
 		statement(fsys);
 		gen(JMP, 0, cx1);
 		code[cx2].a = cx;
@@ -1326,7 +1409,7 @@ void main()
 
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
-	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_IDENTIFIER, SYM_GOTO, SYM_NULL);
+	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_GOTO, SYM_NULL); //此处不应有SYM_IDENTIFIER
 	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_RDM, SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
