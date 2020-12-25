@@ -1,0 +1,5 @@
+var m,&n = m;
+begin
+m := 1;
+print(n);
+end.
