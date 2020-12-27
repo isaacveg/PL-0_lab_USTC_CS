@@ -298,7 +298,9 @@ void enter(int kind)
 		break;
 	case ID_PROCEDURE:
 		mk = (mask *)&table[tx];
-		mk->level = level;
+		mk->level = now_procedure;
+		all_procedure[now_procedure].next = NULL;  //初始化函数表中结点
+		all_procedure[now_procedure].para_num = 0; //
 		break;
 	case ID_ARRAY:
 		lastArray.attr->dim = cur_dim;
@@ -315,9 +317,29 @@ void enter(int kind)
 		dx += mk_a->attr->sum;									 //为数组开辟sum大小的空间
 		lastArray.attr = (attribute *)malloc(sizeof(attribute)); //先前为lastArray.attr开辟的空间已经被table使用，开辟新的空间
 		break;
+	case ID_PARAMETER_A:
+		lastArray.attr->dim = cur_dim;
+		lastArray.attr->size[cur_dim - 1] = 1;
+		lastArray.attr->level = 0; //参数只会用主程序中变量
+		for (int i = cur_dim - 1; i > 0; i--)
+		{
+			lastArray.attr->size[i - 1] = lastArray.attr->size[i] * lastArray.attr->num[i]; //计算每个维度的size
+		}
+		lastArray.attr->sum = lastArray.attr->size[0] * lastArray.attr->num[0]; //计算sum
+		mk_a = (mask_array *)&table[tx];
+		*mk_a = lastArray;			//至此完成name，dim，level，num，size，sum的修改，还差address
+		mk_a->attr->address = dx++; //dx作为首地址
+		//dx += mk_a->attr->sum;//参数只分配一个空间									 //为数组开辟sum大小的空间
+		lastArray.attr = (attribute *)malloc(sizeof(attribute)); //先前为lastArray.attr开辟的空间已经被table使用，开辟新的空间
+		break;
 	case ID_REFERENCE:
 		mk = (mask *)&table[tx];
 		mk->level = level;
+		break;
+	case ID_PARAMETER_I: //引用参数变量
+		mk = (mask *)&table[tx];
+		mk->level = 0;
+		mk->address = dx++;
 		break;
 	} // switch
 } // enter
@@ -447,8 +469,47 @@ void vardeclaration(void)
 				getsym();
 				if (sym == SYM_IDENTIFIER)
 				{
+					getsym();
 					int i = position(id);
 					if (i != 0)
+					{
+						mask *mk1 = (mask *)&table[tx];				//引用变量的符号表
+						mask_array *mk2 = (mask_array *)&table[tx]; //引用变量的符号表
+						mask *mk3 = (mask *)&table[i];				//被引用变量的符号表
+						mask_array *mk4 = (mask_array *)&table[i];	//被引用变量的符号表
+						switch (table[i].kind)
+						{
+						case ID_VARIABLE:
+							mk1->kind = ID_VARIABLE;
+							mk1->address = mk3->address;
+							break;
+						case ID_ARRAY:
+							if (sym == SYM_LBRACK)
+							{ //引用数组中的某个元素
+								cur_dim = 0;
+								dimDeclaration(); //获取引用的元素的目标
+								mk1->kind = ID_VARIABLE;
+								mk1->address = mk4->attr->address;
+								int k;
+								for (k = 0; k < mk4->attr->dim; k++)
+								{
+									mk1->address += lastArray.attr->num[k] * mk4->attr->size[k];
+								}
+							}
+							else
+							{ //直接引用数组名
+								mk2->kind = ID_ARRAY;
+								mk2->attr = mk4->attr;
+							}
+							break;
+						default:
+							break;
+						}
+					}
+					else
+						error(11); //Undeclared identifier.
+
+					/*if (i != 0)
 					{
 						//对引用类型所指向的地址进行回填
 						((mask *)table + tx)->address = ((mask *)table + i)->address;
@@ -456,6 +517,7 @@ void vardeclaration(void)
 					}
 					else
 						error(11); //Undeclared identifier.
+					*/
 				}
 				else
 					error(31); //There must be a identify to follow '='.
@@ -486,7 +548,7 @@ void listcode(int from, int to)
 } // listcode
 
 //////////////////////////////////////////////////////////////////////
-void match_array_dim(symset fsys)
+void match_array_dim(void)
 { //匹配数组的维度信息，并将偏移量置于栈顶
 	symset set;
 	cur_dim = 0;
@@ -495,7 +557,7 @@ void match_array_dim(symset fsys)
 	{
 		cur_dim++;
 		getsym();
-		set = uniteset(createset(SYM_RBRACK, SYM_NULL), fsys);
+		set = createset(SYM_RBRACK, SYM_NULL);
 		expression(set);
 		destroyset(set);
 		getsym();
@@ -527,10 +589,17 @@ void factor(symset fsys)
 				else
 				{
 					mask_array *mk = (mask_array *)&table[i];
+					int kind = mk->kind;
 					curArray = *mk;
-					match_array_dim(fsys);
+					match_array_dim();
 
-					gen(LDA, level - mk->attr->level, mk->attr->address);
+					if (kind == ID_ARRAY)
+						gen(LDA, level - mk->attr->level, mk->attr->address);
+					else if (kind == ID_PARAMETER_A)
+					{
+						gen(LOD, 0, mk->attr->address);
+						gen(LDP, 1, 0); //值与level-mk->attr->level相同
+					}
 				}
 			}
 			else
@@ -554,6 +623,11 @@ void factor(symset fsys)
 						break;
 					case ID_PROCEDURE:
 						error(21); // Procedure identifier can not be in an expression.
+						break;
+					case ID_PARAMETER_I:
+						mk = (mask *)&table[i];
+						gen(LOD, 0, mk->address);
+						gen(LDA, 1, 0); //认为只会出现层次差为 1 的情况
 						break;
 					} // switch
 				}
@@ -765,6 +839,102 @@ void or_condition(symset fsys)
 }
 
 //////////////////////////////////////////////////////////////////////
+void call(int i, symset fsys)
+{
+	int para_num, j, k = 0;
+	mask *mk_p = (mask *)&table[i];
+	mask *mk;
+	mask_array *mk_a;
+	symset set;
+	now_procedure = mk_p->level;
+	para_num = all_procedure[now_procedure].para_num;
+	procedure_parameter *parameter = all_procedure[now_procedure].next;
+
+	getsym();
+	if (sym == SYM_LPAREN) //左括号
+	{
+		getsym();
+		for (k = 0; k < para_num && sym != SYM_RPAREN; k++)
+		{
+			int kind = parameter->kind;
+			switch (kind)
+			{
+			case ID_VARIABLE:
+				set = uniteset(createset(SYM_RBRACK, SYM_COMMA, SYM_NULL), fsys);
+				expression(set);
+				destroyset(set);
+				break;
+			case ID_PARAMETER_I:
+				if (!(j = position(id)))
+				{
+					error(11); // Undeclared identifier.
+				}
+				if (table[j].kind == ID_VARIABLE)
+				{
+					mk = (mask *)&table[j];
+					gen(LIT, 0, mk->address);
+					getsym();
+				}
+				else if (table[j].kind == ID_ARRAY)
+				{
+					getsym();
+					if (sym == SYM_LBRACK)
+					{
+						mk_a = (mask_array *)&table[j];
+						curArray = *mk_a;
+						match_array_dim();
+						gen(LIT, 0, mk_a->attr->address);
+						gen(OPR, 0, OPR_ADD);
+					}
+					else
+					{
+						error(39); //expecting '['
+					}
+				}
+				else
+				{
+					error(40); //  参数格式不匹配
+				}
+				break;
+			case ID_PARAMETER_A:
+				if (!(j = position(id)))
+				{
+					error(11); // Undeclared identifier.
+				}
+				if (table[j].kind != ID_ARRAY)
+				{
+					error(40); //  参数格式不匹配
+				}
+				else
+				{
+					mk_a = (mask_array *)&table[j];
+					gen(LIT, 0, mk_a->attr->address);
+					getsym();
+					break;
+				}
+			}
+			if (sym == SYM_COMMA)
+			{
+				getsym();
+			}
+			parameter = parameter->next;
+		}
+		if (sym == SYM_RPAREN && k == para_num) //右括号
+		{
+			gen(PAS, 0, para_num);
+			gen(CAL, 0, mk_p->address);
+		}
+		else
+		{
+			error(41); // 参数传递错误
+		}
+	}
+	else
+	{
+		error(33); // missing '('
+	}
+}
+
 void statement(symset fsys)
 {
 	int i, cx1, cx2;
@@ -772,7 +942,7 @@ void statement(symset fsys)
 
 	if (sym == SYM_IDENTIFIER)
 	{
-		int cur_lever, addr;
+		int cur_lever, addr, kind;
 		getsym();
 		if (sym == SYM_LBRACK)
 		{ // array assignment
@@ -782,8 +952,9 @@ void statement(symset fsys)
 			}
 
 			mask_array *mk = (mask_array *)&table[i];
+			kind = mk->kind;
 			curArray = *mk;
-			match_array_dim(fsys);
+			match_array_dim();
 
 			if (sym == SYM_BECOMES)
 			{
@@ -798,8 +969,13 @@ void statement(symset fsys)
 			expression(fsys);
 			destroyset(set);
 
-			if (i)
+			if (kind == ID_ARRAY)
 				gen(STA, level - mk->attr->level, mk->attr->address);
+			else if (kind == ID_PARAMETER_A)
+			{
+				gen(LOD, 0, mk->attr->address); //取出传进的数组在主活动记录的偏移
+				gen(STP, 1, 0);					//i.a用不到，i.l必为1，与level - mk->attr->level值相同
+			}
 		}
 		else
 		{ // variable assignment
@@ -837,12 +1013,13 @@ void statement(symset fsys)
 					}
 				} //else 至此完成对label的处理
 			}
-			else if (table[i].kind != ID_VARIABLE)
+			else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_PARAMETER_I)
 			{
 				error(12); // Illegal assignment.
 				i = 0;
 			}
 			mk = (mask *)&table[i];
+			kind = mk->kind;
 
 			if (sym == SYM_BECOMES)
 			{
@@ -855,8 +1032,13 @@ void statement(symset fsys)
 
 			expression(fsys);
 
-			if (i)
+			if (kind == ID_VARIABLE)
 				gen(STO, level - mk->level, mk->address);
+			else if (kind == ID_PARAMETER_I)
+			{
+				gen(LOD, 0, mk->address);
+				gen(STI, 1, 0); //参数调用认为层差为 1，不用 i.a
+			}
 		}
 	}
 	else if (sym == SYM_CALL)
@@ -874,9 +1056,10 @@ void statement(symset fsys)
 			}
 			else if (table[i].kind == ID_PROCEDURE)
 			{
-				mask *mk;
-				mk = (mask *)&table[i];
-				gen(CAL, level - mk->level, mk->address);
+				//mask *mk;
+				//mk = (mask *)&table[i];
+				//gen(CAL, level - mk->level, mk->address);
+				call(i, fsys);
 			}
 			else
 			{
@@ -1092,6 +1275,28 @@ void statement(symset fsys)
 	test(fsys, phi, 19);
 } // statement
 
+void enter_parameter(int kind) //向相应函数表项下增加参数结点
+{
+	int i = all_procedure[now_procedure].para_num;
+	procedure_parameter *new_para = (procedure_parameter *)malloc(sizeof(procedure_parameter));
+	new_para->kind = kind;
+	new_para->next = NULL;
+	if (i)
+	{
+		procedure_parameter *p = all_procedure[now_procedure].next;
+		while (--i)
+		{
+			p = p->next;
+		}
+		p->next = new_para;
+	}
+	else
+	{
+		all_procedure[now_procedure].next = new_para;
+	}
+	all_procedure[now_procedure].para_num++;
+}
+
 //////////////////////////////////////////////////////////////////////
 void block(symset fsys)
 {
@@ -1101,9 +1306,9 @@ void block(symset fsys)
 	int savedTx;
 	symset set1, set;
 
-	dx = 3;
+	dx = 3 + parameter_num;
 	block_dx = dx;
-	mk = (mask *)&table[tx];
+	mk = (mask *)&table[tx - parameter_num]; //还原函数在符号表中位置
 	mk->address = cx;
 	gen(JMP, 0, 0);
 	if (level > MAXLEVEL)
@@ -1156,8 +1361,8 @@ void block(symset fsys)
 			} while (sym == SYM_IDENTIFIER);
 		}			   // if
 		block_dx = dx; //save dx before handling procedure call!
-		while (sym == SYM_PROCEDURE)
-		{ // procedure declarations
+		while (sym == SYM_PROCEDURE && level == 0)
+		{ // procedure declarations 大改
 			getsym();
 			if (sym == SYM_IDENTIFIER)
 			{
@@ -1169,17 +1374,71 @@ void block(symset fsys)
 				error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
 			}
 
-			if (sym == SYM_SEMICOLON)
+			level++;
+			parameter_num = 0;
+			dx = 3;
+			savedTx = tx;
+			if (sym == SYM_LPAREN)
 			{
 				getsym();
+				while (sym == SYM_VAR)
+				{
+					getsym();
+					if (sym == SYM_IDENTIFIER)
+					{
+						getsym();
+						if (sym == SYM_LBRACK)
+						{ //标识符是数组
+							cur_dim = 0;
+							lastArray.kind = ID_PARAMETER_A;
+							strcpy(lastArray.name, id);
+							dimDeclaration();
+							enter(ID_PARAMETER_A);
+							enter_parameter(ID_PARAMETER_A);
+						}
+						else //标识符是变量
+						{
+							enter(ID_VARIABLE);
+							enter_parameter(ID_VARIABLE);
+						}
+						parameter_num++;
+					}
+					else if (sym == SYM_QUOTE) //标识符是引用
+					{
+						getsym();
+						if (sym == SYM_IDENTIFIER)
+						{
+							enter(ID_PARAMETER_I);
+							enter_parameter(ID_PARAMETER_I);
+							getsym();
+							parameter_num++;
+						}
+					}
+					else
+					{
+						error(42); //待修改 丢失“&”或id
+					}
+					if (sym == SYM_COMMA)
+					{
+						getsym();
+					}
+				}
+				if (sym == SYM_RPAREN)
+				{
+					getsym();
+				}
+				else
+				{
+					error(22); // Missing ')'
+				}
 			}
 			else
 			{
-				error(5); // Missing ',' or ';'.
+				error(33); // Missing '('.
 			}
-
-			level++;
-			savedTx = tx;
+			now_procedure++;
+			//level++;
+			//savedTx = tx;
 			set1 = createset(SYM_SEMICOLON, SYM_NULL);
 			set = uniteset(set1, fsys);
 			block(set);
@@ -1243,6 +1502,8 @@ void interpret()
 	int top;	   // top of stack
 	int b;		   // program, base, and top-stack register
 	instruction i; // instruction register
+
+	int k;
 
 	printf("Begin executing PL/0 program.\n");
 
@@ -1378,6 +1639,27 @@ void interpret()
 			else
 				printf("%d\n", stack[top--]);
 			break;
+		case PAS:
+			for (k = i.a; k > 0; k--)
+			{
+				stack[top + 3] = stack[top];
+				top--;
+			}
+			break;
+		case LDP: //LDA改编，i.a从栈顶取
+			top--;
+			stack[top] = stack[base(stack, b, i.l) + stack[top] + stack[top + 1]]; //活动记录基址+数组内偏移+数组首地址偏移
+			break;
+		case STP: //同理
+			stack[base(stack, b, i.l) + stack[top - 2] + stack[top]] = stack[top - 1];
+			printf("%d\n", stack[top - 1]);
+			top -= 3; //此处存疑
+			break;
+		case STI:
+			stack[base(stack, b, i.l) + stack[top]] = stack[top - 1];
+			printf("%d\n", stack[top - 1]);
+			top -= 2;
+			break;
 		} // switch
 	} while (pc);
 
@@ -1395,6 +1677,8 @@ void main()
 	srand((unsigned)time(0));
 
 	lastArray.attr = (attribute *)malloc(sizeof(attribute));
+	parameter_num = 0;
+	now_procedure = 0;
 
 	printf("Please input source file name: "); // get file name to be compiled
 	scanf("%s", s);

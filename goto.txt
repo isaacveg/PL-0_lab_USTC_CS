@@ -5,27 +5,27 @@ begin
 	goto start;
 	print(1000);
 	while(i<40) do
-	  begin
+	begin
 		 start:
 		 if (i > 20) then goto finish;
 		 else begin i := i + 5; print(i); end;
-	  end;
+	end;
 	finish: 
 	print();print(i,100);
 	print();
 	i := 0;
 	new1:
-	  begin
+	begin
 		 i := i + 6;
 		 print(i);
 		 if(i < 20) then goto new1;
-	  end;
+	end;
 	
 	print();
 	
 	i := 0;
   
-	  begin
+  begin
 		Loopbegin:
 		if (i>10) then goto Loopend;
 		print(i*5);
@@ -33,7 +33,7 @@ begin
 		goto Loopbegin;
 		k: i := i + 2;
 Loopend:
-	  end;
+	end;
 	
 	print();
   print(i);

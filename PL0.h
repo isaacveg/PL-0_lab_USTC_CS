@@ -16,6 +16,8 @@
 
 #define STACKSIZE 1000 // maximum storage
 
+#define MAXPROCEDURE 50 // 函数最大数量
+
 enum symtype
 {
 	SYM_NULL,
@@ -67,7 +69,9 @@ enum idtype
 	ID_VARIABLE,
 	ID_PROCEDURE,
 	ID_ARRAY,
-	ID_REFERENCE
+	ID_REFERENCE,
+	ID_PARAMETER_I,//引用参数
+	ID_PARAMETER_A//数组参数
 };
 
 enum opcode
@@ -83,7 +87,11 @@ enum opcode
 	LDA,
 	STA,
 	RDM, //random
-	PRT
+	PRT,
+	PAS, //用于传参
+	LDP, //以下为参数数组读取所需指令（传地址）
+	STP, //针对存参数数组
+	STI	 //针对存参数引用
 };
 
 enum oprcode
@@ -154,7 +162,11 @@ char *err_msg[] =
 		/* 35 */ "too many labels.",
 		/* 36 */ "Missing ';'.",
 		/* 37 */ "too many goto.",
-		/* 38 */ "goto undefined label."};
+		/* 38 */ "goto undefined label.",
+		/* 39 */ "missing '['.",
+		/* 40 */ "incompatible parameters.",
+		/* 41 */ "incorrect parameter passing, wrong number or missing ')'.",
+		/* 42 */ "expecting '&' or identifier of ID_VARIABLE"};
 
 //////////////////////////////////////////////////////////////////////
 char ch;			   // last character read
@@ -195,10 +207,11 @@ char csym[NSYM + 1] =
 	{
 		' ', '+', '-', '*', '(', ')', '=', ',', '.', ';'};
 
-#define MAXINS 12 //增加LDA和STA用于数组，
+#define MAXINS 16 //增加LDA和STA用于数组，
 char *mnemonic[MAXINS] =
 	{
-		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT"};
+		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT", 
+		"PAS", "LDP", "STP", "STI"};
 
 typedef struct //数组附加属性
 {
@@ -229,7 +242,7 @@ typedef struct //variable与procedure使用
 {
 	char name[MAXIDLEN + 1];
 	int kind;
-	short level;
+	short level;	//procedure中保存函数表中偏移
 	short address; //栈中地址
 } mask;
 
@@ -240,11 +253,29 @@ typedef struct mask_array //array使用
 	attribute *attr;
 } mask_array;
 
+/////建立函数参数表
+typedef struct procedure_parameter
+{
+	int kind;	//参数类型  传值，传地址，传数组
+	struct procedure_parameter *next;
+}procedure_parameter;
+
+typedef struct 
+{
+	int para_num;	//参数数量
+	procedure_parameter *next; 
+}procedure_head;
+
+procedure_head all_procedure[MAXPROCEDURE]; //全体函数参量表
+short now_procedure;
+
 mask_array lastArray; //最后读到的数组声明
 mask_array curArray;  //当前正在分析的数组
 int cur_dim;
 
 FILE *infile;
+
+int parameter_num;
 
 #define NLABEL 20					   //label的最大数量
 #define NGOTO 20					   //goto的最大数量
