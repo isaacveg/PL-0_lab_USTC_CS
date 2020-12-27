@@ -1,0 +1,10 @@
+const N = 3;
+var i, d[N][4];
+procedure p(var a, var &b, var c[3][4])
+begin
+    i := 0;
+end;
+begin
+    i := 2;
+    call p(i, i, d);
+end.
