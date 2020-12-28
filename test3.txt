@@ -1,0 +1,13 @@
+const N = 3;
+var i;
+procedure p(var a, var &b)
+begin
+    i := 0;
+end;
+procedure q(var c, var a[N][4])
+begin
+    i := 1;
+end;
+begin
+    i := 2;
+end.

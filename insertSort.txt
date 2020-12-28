@@ -1,0 +1,64 @@
+const N = 20;
+
+var i,j,p[N];
+
+procedure insert(var a[N])
+var i,j,v;
+
+begin 
+	
+  i := 1;
+	while (i < N) do 
+	  begin
+	   if (a[i] < a[i-1]) then
+	     begin
+	     		v := a[i];
+	     		a[i] := a[i-1];
+	     		j := i - 2;
+	     		while (j >=0 && a[j] > v)  do
+	        		begin
+	          		 a[j+1] := a[j];
+	        	  	 j := j - 1;
+	      	  	end;
+	     		a[j+1] := v;
+	     end;
+	     i := i + 1;
+	  end;
+end;
+
+
+begin
+
+   i := 0;
+   while ( i < N ) do 
+   begin
+       p[i] := random(20);
+       i := i + 1;
+   end;
+  
+  print();
+
+	call insert(p);
+  
+<<<<<<< HEAD
+<<<<<<< HEAD
+  print();
+=======
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+=======
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+  i := 0;
+  while ( i < N ) do 
+  begin
+       print(p[i]);
+<<<<<<< HEAD
+<<<<<<< HEAD
+       print();
+=======
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+=======
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+       i := i + 1;
+  end;
+  
+end.

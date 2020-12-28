@@ -1,12 +1,19 @@
+// pl0 compiler source code
+
 #pragma warning(disable : 4996)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+
 #include "PL0.h"
 #include "set.c"
 
-//打印错误信息
+void expression(symset fsys);
+//////////////////////////////////////////////////////////////////////
+// print error message.
 void error(int n)
 {
 	int i;
@@ -17,26 +24,9 @@ void error(int n)
 	printf("^\n");
 	printf("Error %3d: %s\n", n, err_msg[n]);
 	err++;
-}
+} // error
 
-/*
-2.1 词法分析
-PL/0 的语言的词法分析器将要完成以下工作：
-（1） 跳过分隔符（如空格，回车，制表符）；
-（2） 识别诸如begin，end，if，while 等保留字；
-（3） 识别非保留字的一般标识符，此标识符值（字符序列）赋给全局量id，
-而全局量sym 赋值为SYM_IDENTIFIER。
-（4） 识别数字序列，当前值赋给全局量NUM，sym 则置为SYM_NUMBER；
-（5） 识别:=，<=，>=之类的特殊符号，全局量sym 则分别被赋值为
-SYM_BECOMES，SYM_LEQ，SYM_GTR 等。
-*/
-
-/*
-获取单个字符的过程，除此之外，它还完成：
-（1） 识别且跳过行结束符；
-（2） 将输入源文件复写到输出文件；
-（3） 产生一份程序列表，输出相应行号或指令计数器的值。
-*/
+//////////////////////////////////////////////////////////////////////
 void getch(void)
 {
 	if (cc == ll)
@@ -48,24 +38,8 @@ void getch(void)
 		}
 		ll = cc = 0;
 		printf("%5d  ", cx);
-<<<<<<< HEAD
-<<<<<<< HEAD
-		while ( (!feof(infile)) // added & modified by alex 01-02-09
-			    && ((ch = getc(infile)) != '\n'))
-=======
 		while ((!feof(infile)) // added & modified by alex 01-02-09
 			   && ((ch = getc(infile)) != '\n'))
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
-=======
-		while ((!feof(infile)) // added & modified by alex 01-02-09
-			&& ((ch = getc(infile)) != '\n'))
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 		{
 			printf("%c", ch);
 			line[++ll] = ch;
@@ -74,14 +48,22 @@ void getch(void)
 		line[++ll] = ' ';
 	}
 	ch = line[++cc];
-}
+} // getch
 
-//获取输入符号
+//////////////////////////////////////////////////////////////////////
+// gets a symbol from input stream.
+int pre_sym_count = 0;
+int sym_stack[10] = {0};
+
 void getsym(void)
 {
 	int i, k;
 	char a[MAXIDLEN + 1];
-
+	if (pre_sym_count > 0)
+	{
+		sym = sym_stack[--pre_sym_count];
+		return;
+	}
 	while (ch == ' ' || ch == '\t')
 		getch();
 
@@ -128,7 +110,7 @@ void getsym(void)
 		}
 		else
 		{
-			sym = SYM_NULL; // illegal?
+			sym = SYM_COLON; // :
 		}
 	}
 	else if (ch == '>')
@@ -164,40 +146,6 @@ void getsym(void)
 	}
 	else if (ch == '&')
 	{
-<<<<<<< HEAD
-<<<<<<< HEAD
-        getch();
-        if (ch == '&')
-        {
-            sym = SYM_AND;     // &&
-            getch();
-        }
-
-	}
-	else if (ch == '|')
-    {
-        getch();
-        if (ch == '|')
-        {
-            sym = SYM_OR;     // &&
-            getch();
-        }
-    }
-    else if (ch == '!')
-    {
-        sym = SYM_NOT;
-        getch();
-    }
-=======
-		getch();
-		if (ch == '&')
-		{
-			sym = SYM_AND; // &&
-			getch();
-		}
-	}
-	else if (ch == '|')
-=======
 		getch();
 		if (ch == '&')
 		{
@@ -205,13 +153,9 @@ void getsym(void)
 			getch();
 		}
 		else
-		{
-			sym = SYM_QUOTE; //&
-			getch();
-		}
+			sym = SYM_QUOTE;
 	}
 	else if (ch == '|')
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 	{
 		getch();
 		if (ch == '|')
@@ -236,11 +180,7 @@ void getsym(void)
 		getch();
 	}
 	else if (ch == '/')
-<<<<<<< HEAD
 	//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
-=======
-		//为实现注释，将对'/'的匹配从else中删除（即删除csym与ssym中的slash）,挪到此处
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 	{
 		getch();
 		if (ch == '/') // 读到"//"
@@ -249,7 +189,7 @@ void getsym(void)
 			while (tag)
 			{
 				getch();
-				if (cc == ll)//读完本行
+				if (cc == ll) //读完本行
 				{
 					tag = 0;
 					getch();
@@ -280,10 +220,6 @@ void getsym(void)
 			sym = SYM_SLASH;
 		}
 	}
-<<<<<<< HEAD
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 	else
 	{ // other tokens
 		i = NSYM;
@@ -301,55 +237,10 @@ void getsym(void)
 			exit(1);
 		}
 	}
-}
+} // getsym
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 //////////////////////////////////////////////////////////////////////
-// generates (assembles) an instruction.
-=======
-=======
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
-/*
-2.4 代码生成
-PL/0 编译程序不仅完成通常的词法分析、语法分析，而且还产生中间代码和
-“目标”代码。最终我们要“运行”该目标码。为了使我们的编译程序保持适当
-简单的水平，不致陷入与本课程无关的实际机器的特有性质的考虑中去，我们假
-想有台适合PL/0 程序运行的计算机，我们称之为PL/0 处理机。PL/0 处理机顺
-序解释生成的目标代码，我们称之为解释程序。注意：这里的假设与我们的编译
-概念并不矛盾，在本课程中我们写的只是一个示范性的编译程序，它的后端无法
-完整地实现，因而只能在一个解释性的环境下予以模拟。从另一个角度上讲，把
-解释程序就看成是PL/0 机硬件，把解释执行看成是PL/0 的硬件执行，那么我们
-所做的工作：由PL/0 源语言程序到PL/0 机器指令的变换，就是一个完整的编译
-程序。
-PL/0 处理机有两类存贮，目标代码放在一个固定的存贮数组code 中，而所
-需数据组织成一个栈形式存放。
-PL/0 处理机的指令集根据PL/0 语言的要求而设计，它包括以下的指令：
-<<<<<<< HEAD
-（1）LIT 将常数置于栈顶 
-（2）LOD 将变量值置于栈顶 
-（3）STO 将栈顶的值赋与某变量 
-（4）CAL 用于过程调用的指令 
-（5）INT 在数据栈中分配存贮空间 
-=======
-（1）LIT 将常数置于栈顶
-（2）LOD 将变量值置于栈顶
-（3）STO 将栈顶的值赋与某变量
-（4）CAL 用于过程调用的指令
-（5）INT 在数据栈中分配存贮空间
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
-（6）JMP, JPC  用于if, while 语句的条件或无条件控制转移指令
-（7）OPR 一组算术或逻辑运算指令
-*/
-
-/*
-生成中间代码
-把三个参数f、l、a 组装成一条目标指令并存放于code 数组中，增加CX 的值，CX 表示下一条即将生成的目标指令的地址。
-*/
-<<<<<<< HEAD
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
+// generates (assembles) an instruction. //生成中间代码
 void gen(int x, int y, int z)
 {
 	if (cx > CXMAX)
@@ -360,9 +251,10 @@ void gen(int x, int y, int z)
 	code[cx].f = x;
 	code[cx].l = y;
 	code[cx++].a = z;
-}
+} // gen
 
-//测试是否发生错误并跳过不属于s1或s2的所有符号
+//////////////////////////////////////////////////////////////////////
+// tests if error occurs and skips all symbols that do not belongs to s1 or s2.
 void test(symset s1, symset s2, int n)
 {
 	symset s;
@@ -375,30 +267,16 @@ void test(symset s1, symset s2, int n)
 			getsym();
 		destroyset(s);
 	}
-}
+} // test
 
-/*
-2.7 符号表管理
-为了组成一条指令，编译程序必须知道其操作码及其参数（数或地址）。这
-些值是由编译程序本身联系到相应标识符上去的。这种联系是在处理常数、变量
-和过程说明完成的。为此，标识符表应包含每一标识符所联系的属性；如果标识
-符被说明为常数，其属性值为常数值；如果标识符被说明成变量，其属性就是由
-层次和修正量（偏移量）组成的地址；如果标识符被说明为过程，其属性就是过
-程的入口地址及层次。
-常数的值由程序正文提供，编译的任务就是确定存放该值的地址。我们选择
-16
-顺序分配变量和代码的方法；每遇到一个变量说明，就将数据单元的下标加一
-（PL/0 机中，每个变量占一个存贮单元）。开始编译一个过程时，要对数据单元
-的下标dx 赋初值，表示新开辟一个数据区。dx 的初值为3，因为每个数据区包
-含三个内部变量RA，DL 和SL。
-*/
+//////////////////////////////////////////////////////////////////////
+int dx; // data allocation index
 
-int dx; //数据分配索引
-
-//向符号表添加新的符号，并确定标识符的有关属性
+// enter object(constant, variable , procedre or array) into table.//添加到符号表
 void enter(int kind)
 {
 	mask *mk;
+	mask_array *mk_a;
 
 	tx++;
 	strcpy(table[tx].name, id);
@@ -414,91 +292,61 @@ void enter(int kind)
 		table[tx].value = num;
 		break;
 	case ID_VARIABLE:
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		mk = (mask*) &table[tx];
-=======
 		mk = (mask *)&table[tx];
->>>>>>> parent of f50d058... 代码格式化
-=======
-		mk = (mask *)&table[tx];
->>>>>>> parent of f50d058... 代码格式化
-=======
-		mk = (mask *)&table[tx];
->>>>>>> parent of f50d058... 代码格式化
-=======
-		mk = (mask*)& table[tx];
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 		mk->level = level;
 		mk->address = dx++;
 		break;
 	case ID_PROCEDURE:
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		mk = (mask*) &table[tx];
-		mk->level = level;
+		mk = (mask *)&table[tx];
+		mk->level = now_procedure;
+		all_procedure[now_procedure].next = NULL;  //初始化函数表中结点
+		all_procedure[now_procedure].para_num = 0; //
 		break;
-=======
-=======
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
+	case ID_ARRAY:
+		lastArray.attr->dim = cur_dim;
+		lastArray.attr->size[cur_dim - 1] = 1;
+		lastArray.attr->level = level;
+		for (int i = cur_dim - 1; i > 0; i--)
+		{
+			lastArray.attr->size[i - 1] = lastArray.attr->size[i] * lastArray.attr->num[i]; //计算每个维度的size
+		}
+		lastArray.attr->sum = lastArray.attr->size[0] * lastArray.attr->num[0]; //计算sum
+		mk_a = (mask_array *)&table[tx];
+		*mk_a = lastArray;										 //至此完成name，dim，level，num，size，sum的修改，还差address
+		mk_a->attr->address = dx;								 //dx作为首地址
+		dx += mk_a->attr->sum;									 //为数组开辟sum大小的空间
+		lastArray.attr = (attribute *)malloc(sizeof(attribute)); //先前为lastArray.attr开辟的空间已经被table使用，开辟新的空间
+		break;
+	case ID_PARAMETER_A:
+		lastArray.attr->dim = cur_dim;
+		lastArray.attr->size[cur_dim - 1] = 1;
+		lastArray.attr->level = 0; //参数只会用主程序中变量
+		for (int i = cur_dim - 1; i > 0; i--)
+		{
+			lastArray.attr->size[i - 1] = lastArray.attr->size[i] * lastArray.attr->num[i]; //计算每个维度的size
+		}
+		lastArray.attr->sum = lastArray.attr->size[0] * lastArray.attr->num[0]; //计算sum
+		mk_a = (mask_array *)&table[tx];
+		*mk_a = lastArray;			//至此完成name，dim，level，num，size，sum的修改，还差address
+		mk_a->attr->address = dx++; //dx作为首地址
+		//dx += mk_a->attr->sum;//参数只分配一个空间									 //为数组开辟sum大小的空间
+		lastArray.attr = (attribute *)malloc(sizeof(attribute)); //先前为lastArray.attr开辟的空间已经被table使用，开辟新的空间
+		break;
+	case ID_REFERENCE:
 		mk = (mask *)&table[tx];
 		mk->level = level;
 		break;
-	case ID_ARRAY: /*********************/
-		/*code*/
-		break;
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
-=======
-		mk = (mask*)& table[tx];
-		mk->level = level;
-		break;
-	case ID_ARRAY: /*********************/
-		/*code*/
-		break;
-	case ID_REFERENCE:
-		mk = (mask*)& table[tx];
-		mk->level = level;
+	case ID_PARAMETER_I: //引用参数变量
+		mk = (mask *)&table[tx];
+		mk->level = 0;
 		mk->address = dx++;
-		mk->kind
 		break;
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 	} // switch
-}
+} // enter
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 //////////////////////////////////////////////////////////////////////
 // locates identifier in symbol table.
-=======
-//在符号表中查找标识符
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
-int position(char* id)
-=======
-//在符号表中查找标识符
 int position(char *id)
->>>>>>> parent of f50d058... 代码格式化
-=======
-//在符号表中查找标识符
-int position(char *id)
->>>>>>> parent of f50d058... 代码格式化
-=======
-//在符号表中查找标识符
-int position(char *id)
->>>>>>> parent of f50d058... 代码格式化
 {
 	int i;
 	strcpy(table[0].name, id);
@@ -506,9 +354,9 @@ int position(char *id)
 	while (strcmp(table[--i].name, id) != 0)
 		;
 	return i;
-}
+} // position
 
-//常数声明
+//////////////////////////////////////////////////////////////////////
 void constdeclaration()
 {
 	if (sym == SYM_IDENTIFIER)
@@ -533,152 +381,201 @@ void constdeclaration()
 		{
 			error(3); // There must be an '=' to follow the identifier.
 		}
-<<<<<<< HEAD
-<<<<<<< HEAD
-	} else	error(4);
-	 // There must be an identifier to follow 'const', 'var', or 'procedure'.
+	}
+	else
+		error(4);
+	// There must be an identifier to follow 'const', 'var', or 'procedure'.
 } // constdeclaration
-
-=======
-	}
-	else
-		error(4);
-	// There must be an identifier to follow 'const', 'var', or 'procedure'.
-}
-
-int dim;//声明数组的维度
-
-void dimDeclaration(void)
-{
-	dim++;
-	int i;
-	if (sym == SYM_IDENTIFIER || sym == SYM_NUMBER)
-	{ //如何enter 如何组织记录一个数组
-
-=======
-	}
-	else
-		error(4);
-	// There must be an identifier to follow 'const', 'var', or 'procedure'.
-}
-
-int dim;//声明数组的维度
-
-//数组声明
-void dimDeclaration(void)
-{
-	dim++;
-	int i;
-	if (sym == SYM_IDENTIFIER || sym == SYM_NUMBER)
-	{ //如何enter 如何组织记录一个数组
-
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
-		/*
-		if (!(i = position(id)))
-		{
-			error(11); // Undeclared identifier.
-		}
-		else if (table[i].kind == ID_PROCEDURE)
-		{
-			error(26); // Illegal assignment.
-			i = 0;
-		}
-		*/
-	}
-}
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
 //////////////////////////////////////////////////////////////////////
-=======
-//变量声明
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
+int dimConst()
+{
+	if (sym == SYM_IDENTIFIER || sym == SYM_NUMBER)
+	{ //identifier必是const类型
+		int i;
+		if (sym == SYM_IDENTIFIER)
+		{
+			if (!(i = position(id)))
+			{
+				error(11); // Undeclared identifier.
+			}
+			else if (table[i].kind == ID_PROCEDURE)
+			{
+				error(26); // Illegal identifier.
+				i = 0;
+			}
+
+			return table[i].value;
+		}
+		else
+		{
+			return num;
+		}
+	}
+	else
+	{
+		error(28);
+	}
+}
+//////////////////////////////////////////////////////////////////////
+void dimDeclaration(void)
+{
+	int value;
+	if (sym == SYM_LBRACK)
+	{
+		getsym();
+		value = dimConst();
+
+		lastArray.attr->num[cur_dim++] = value;
+
+		getsym();
+		if (sym != SYM_RBRACK)
+		{
+			error(27); //expected ']'
+		}
+		else
+		{
+			getsym();
+			dimDeclaration();
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
 void vardeclaration(void)
 {
 	if (sym == SYM_IDENTIFIER)
 	{
 		getsym();
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 		if (sym == SYM_LBRACK)
-		{
-			getsym();
-			dim = 0;
+		{ //标识符是数组
+			cur_dim = 0;
+			lastArray.kind = ID_ARRAY;
+			strcpy(lastArray.name, id);
 			dimDeclaration();
+			enter(ID_ARRAY);
 		}
-		else
+		else //标识符是变量
 			enter(ID_VARIABLE);
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
-=======
 	}
 	else if (sym == SYM_QUOTE)
-	{
+	{ //引用变量
 		getsym();
 		if (sym == SYM_IDENTIFIER)
 		{
-			getsym();
 			enter(ID_REFERENCE);
+			getsym();
+			if (sym == SYM_EQU)
+			{
+				getsym();
+				if (sym == SYM_IDENTIFIER)
+				{
+					getsym();
+					int i = position(id);
+					if (i != 0)
+					{
+						mask *mk1 = (mask *)&table[tx];				//引用变量的符号表
+						mask_array *mk2 = (mask_array *)&table[tx]; //引用变量的符号表
+						mask *mk3 = (mask *)&table[i];				//被引用变量的符号表
+						mask_array *mk4 = (mask_array *)&table[i];	//被引用变量的符号表
+						switch (table[i].kind)
+						{
+						case ID_VARIABLE:
+							mk1->kind = ID_VARIABLE;
+							mk1->address = mk3->address;
+							break;
+						case ID_ARRAY:
+							if (sym == SYM_LBRACK)
+							{ //引用数组中的某个元素
+								cur_dim = 0;
+								dimDeclaration(); //获取引用的元素的目标
+								mk1->kind = ID_VARIABLE;
+								mk1->address = mk4->attr->address;
+								int k;
+								for (k = 0; k < mk4->attr->dim; k++)
+								{
+									mk1->address += lastArray.attr->num[k] * mk4->attr->size[k];
+								}
+							}
+							else
+							{ //直接引用数组名
+								mk2->kind = ID_ARRAY;
+								mk2->attr = mk4->attr;
+							}
+							break;
+						default:
+							break;
+						}
+					}
+					else
+						error(11); //Undeclared identifier.
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+
+					/*if (i != 0)
+					{
+						//对引用类型所指向的地址进行回填
+						((mask *)table + tx)->address = ((mask *)table + i)->address;
+						getsym();
+					}
+					else
+						error(11); //Undeclared identifier.
+					*/
+<<<<<<< HEAD
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+=======
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+				}
+				else
+					error(31); //There must be a identify to follow '='.
+			}
+			else
+				error(30); //The reference does not initial.
 		}
 		else
-			error(27);	//There must be an identifier to follow '&'.
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
+			error(29); //There must be an identify to follow '&'.
 	}
 	else
 	{
-		error(4);	//There must be an identifier to follow 'const', 'var', or 'procedure'.
+		error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
 	}
-}
+} // vardeclaration
 
-/*
-每一个分程序（过程）被编译结束后，将列出该部分PL/0 程序代码。
-注意，每个分程序（过程）的第一条指令未被列出。
-该指令是跳转指令。
-其作用是绕过该分程序的说明部分所产生的代码（含过程说明所产生的代码
-*/
+//////////////////////////////////////////////////////////////////////
 void listcode(int from, int to)
 {
 	int i;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	
-=======
 
->>>>>>> parent of f50d058... 代码格式化
-=======
-
->>>>>>> parent of f50d058... 代码格式化
-=======
-
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
 	printf("\n");
 	for (i = from; i < to; i++)
 	{
 		printf("%5d %s\t%d\t%d\n", i, mnemonic[code[i].f], code[i].l, code[i].a);
 	}
 	printf("\n");
+} // listcode
+
+//////////////////////////////////////////////////////////////////////
+void match_array_dim(void)
+{ //匹配数组的维度信息，并将偏移量置于栈顶
+	symset set;
+	cur_dim = 0;
+	gen(LIT, 0, 0); //存放偏移量
+	while (sym == SYM_LBRACK)
+	{
+		cur_dim++;
+		getsym();
+		set = createset(SYM_RBRACK, SYM_NULL);
+		expression(set);
+		destroyset(set);
+		getsym();
+		gen(LIT, 0, curArray.attr->size[cur_dim - 1]);
+		gen(OPR, 0, OPR_MUL);
+		gen(OPR, 0, OPR_ADD);
+	}
 }
 
-//因子
 void factor(symset fsys)
 {
 	void expression(symset fsys);
@@ -691,44 +588,59 @@ void factor(symset fsys)
 	{
 		if (sym == SYM_IDENTIFIER)
 		{
-			if ((i = position(id)) == 0)
-			{
-				error(11); // Undeclared identifier.
+			getsym();
+			if (sym == SYM_LBRACK)
+			{ // array
+				if (!(i = position(id)))
+				{
+					error(11); // Undeclared identifier.
+				}
+				else
+				{
+					mask_array *mk = (mask_array *)&table[i];
+					int kind = mk->kind;
+					curArray = *mk;
+					match_array_dim();
+
+					if (kind == ID_ARRAY)
+						gen(LDA, level - mk->attr->level, mk->attr->address);
+					else if (kind == ID_PARAMETER_A)
+					{
+						gen(LOD, 0, mk->attr->address);
+						gen(LDP, 1, 0); //值与level-mk->attr->level相同
+					}
+				}
 			}
 			else
-			{
-				switch (table[i].kind)
+			{ // variable
+				if ((i = position(id)) == 0)
 				{
-					mask *mk;
-				case ID_CONSTANT:
-					gen(LIT, 0, table[i].value);
-					break;
-				case ID_VARIABLE:
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-					mk = (mask*) &table[i];
-=======
-					mk = (mask *)&table[i];
->>>>>>> parent of f50d058... 代码格式化
-=======
-					mk = (mask *)&table[i];
->>>>>>> parent of f50d058... 代码格式化
-=======
-					mk = (mask *)&table[i];
->>>>>>> parent of f50d058... 代码格式化
-=======
-					mk = (mask*)& table[i];
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
-					gen(LOD, level - mk->level, mk->address);
-					break;
-				case ID_PROCEDURE:
-					error(21); // Procedure identifier can not be in an expression.
-					break;
-				} // switch
+					error(11); // Undeclared identifier.
+				}
+				else
+				{
+					switch (table[i].kind)
+					{
+						mask *mk;
+					case ID_CONSTANT:
+						gen(LIT, 0, table[i].value);
+						break;
+					case ID_REFERENCE:
+					case ID_VARIABLE:
+						mk = (mask *)&table[i];
+						gen(LOD, level - mk->level, mk->address);
+						break;
+					case ID_PROCEDURE:
+						error(21); // Procedure identifier can not be in an expression.
+						break;
+					case ID_PARAMETER_I:
+						mk = (mask *)&table[i];
+						gen(LOD, 0, mk->address);
+						gen(LDA, 1, 0); //认为只会出现层次差为 1 的情况
+						break;
+					} // switch
+				}
 			}
-			getsym();
 		}
 		else if (sym == SYM_NUMBER)
 		{
@@ -761,11 +673,43 @@ void factor(symset fsys)
 			factor(fsys);
 			gen(OPR, 0, OPR_NEG);
 		}
+		else if (sym == SYM_NOT)
+		{
+			getsym();
+			factor(fsys);
+			gen(OPR, 0, OPR_NOT);
+		}
+		else if (sym == SYM_RDM)
+		{
+			getsym();
+			if (sym == SYM_LPAREN)
+			{
+				getsym();
+			}
+			else
+				error(33);
+			if (sym == SYM_RPAREN)
+			{
+				getsym();
+				gen(RDM, 0, 0);
+			}
+			else if (sym == SYM_NUMBER)
+			{
+				getsym();
+				if (sym == SYM_RPAREN)
+				{
+					gen(RDM, 0, num);
+					getsym();
+				}
+				else
+					error(22);
+			}
+		}
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
 	} // if
-}
+} // factor
 
-//项
+//////////////////////////////////////////////////////////////////////
 void term(symset fsys)
 {
 	int mulop;
@@ -788,9 +732,9 @@ void term(symset fsys)
 		}
 	} // while
 	destroyset(set);
-}
+} // term
 
-//表达式
+//////////////////////////////////////////////////////////////////////
 void expression(symset fsys)
 {
 	int addop;
@@ -815,9 +759,9 @@ void expression(symset fsys)
 	} // while
 
 	destroyset(set);
-}
+} // expression
 
-//条件
+//////////////////////////////////////////////////////////////////////
 void condition(symset fsys)
 {
 	int relop;
@@ -829,26 +773,18 @@ void condition(symset fsys)
 		expression(fsys);
 		gen(OPR, 0, OPR_ODD);
 	}
-	else if (sym == SYM_NOT)
-	{
-		getsym();
-		expression(fsys);
-		gen(OPR, 0, OPR_NOT);
-	}
 	else
 	{
 		set = uniteset(relset, fsys);
 		expression(set);
 		destroyset(set);
-		if (!inset(sym, relset))
-		{
-			error(20);
-		}
-		else
+		if (inset(sym, relset))
 		{
 			relop = sym;
 			getsym();
-			expression(fsys);
+			set = uniteset(relset, fsys);
+			expression(set);
+			destroyset(set);
 			switch (relop)
 			{
 			case SYM_EQU:
@@ -869,80 +805,249 @@ void condition(symset fsys)
 			case SYM_LEQ:
 				gen(OPR, 0, OPR_LEQ);
 				break;
-			case SYM_AND:
-				gen(OPR, 0, OPR_AND);
-				break;
-			case SYM_OR:
-				gen(OPR, 0, OPR_OR);
-				break;
-			} // switch
-		}	  // else
-	}		  // else
+			}
+			// switch
+		} // else
+	}	  // else
+} // condition
+
+//////////////////////////////////////////////////////////////////////
+void and_condition(symset fsys)
+{
+	symset set, set1;
+
+	set1 = createset(SYM_AND, SYM_NULL);
+	set = uniteset(set1, fsys);
+	condition(set);
+	while (sym == SYM_AND)
+	{
+		getsym();
+		condition(set);
+		gen(OPR, 0, OPR_AND);
+	}
+	destroyset(set1);
+	destroyset(set);
 }
 
-//语句
+//////////////////////////////////////////////////////////////////////
+void or_condition(symset fsys)
+{
+	symset set, set1;
+
+	set1 = createset(SYM_OR, SYM_NULL);
+	set = uniteset(set1, fsys);
+	and_condition(set);
+	while (sym == SYM_OR)
+	{
+		getsym();
+		and_condition(set);
+		gen(OPR, 0, OPR_OR);
+	}
+	destroyset(set1);
+	destroyset(set);
+}
+
+//////////////////////////////////////////////////////////////////////
+void call(int i, symset fsys)
+{
+	int para_num, j, k = 0;
+	mask *mk_p = (mask *)&table[i];
+	mask *mk;
+	mask_array *mk_a;
+	symset set;
+	now_procedure = mk_p->level;
+	para_num = all_procedure[now_procedure].para_num;
+	procedure_parameter *parameter = all_procedure[now_procedure].next;
+
+	getsym();
+	if (sym == SYM_LPAREN) //左括号
+	{
+		getsym();
+		for (k = 0; k < para_num && sym != SYM_RPAREN; k++)
+		{
+			int kind = parameter->kind;
+			switch (kind)
+			{
+			case ID_VARIABLE:
+				set = uniteset(createset(SYM_RBRACK, SYM_COMMA, SYM_NULL), fsys);
+				expression(set);
+				destroyset(set);
+				break;
+			case ID_PARAMETER_I:
+				if (!(j = position(id)))
+				{
+					error(11); // Undeclared identifier.
+				}
+				if (table[j].kind == ID_VARIABLE)
+				{
+					mk = (mask *)&table[j];
+					gen(LIT, 0, mk->address);
+					getsym();
+				}
+				else if (table[j].kind == ID_ARRAY)
+				{
+					getsym();
+					if (sym == SYM_LBRACK)
+					{
+						mk_a = (mask_array *)&table[j];
+						curArray = *mk_a;
+						match_array_dim();
+						gen(LIT, 0, mk_a->attr->address);
+						gen(OPR, 0, OPR_ADD);
+					}
+					else
+					{
+						error(39); //expecting '['
+					}
+				}
+				else
+				{
+					error(40); //  参数格式不匹配
+				}
+				break;
+			case ID_PARAMETER_A:
+				if (!(j = position(id)))
+				{
+					error(11); // Undeclared identifier.
+				}
+				if (table[j].kind != ID_ARRAY)
+				{
+					error(40); //  参数格式不匹配
+				}
+				else
+				{
+					mk_a = (mask_array *)&table[j];
+					gen(LIT, 0, mk_a->attr->address);
+					getsym();
+					break;
+				}
+			}
+			if (sym == SYM_COMMA)
+			{
+				getsym();
+			}
+			parameter = parameter->next;
+		}
+		if (sym == SYM_RPAREN && k == para_num) //右括号
+		{
+			gen(PAS, 0, para_num);
+			gen(CAL, 0, mk_p->address);
+		}
+		else
+		{
+			error(41); // 参数传递错误
+		}
+	}
+	else
+	{
+		error(33); // missing '('
+	}
+}
+
 void statement(symset fsys)
 {
 	int i, cx1, cx2;
 	symset set1, set;
 
 	if (sym == SYM_IDENTIFIER)
-	{ // variable assignment
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		mask* mk;
-<<<<<<< HEAD
-		if (! (i = position(id)))
-=======
-=======
->>>>>>> parent of f50d058... 代码格式化
-=======
->>>>>>> parent of f50d058... 代码格式化
-		mask *mk;
-		if (!(i = position(id)))
->>>>>>> parent of f50d058... 代码格式化
-=======
-		if (!(i = position(id)))
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
-		{
-			error(11); // Undeclared identifier.
-		}
-		else if (table[i].kind != ID_VARIABLE)
-		{
-			error(12); // Illegal assignment.
-			i = 0;
-		}
+	{
+		int cur_lever, addr, kind;
 		getsym();
-		if (sym == SYM_BECOMES)
-		{
-			getsym();
+		if (sym == SYM_LBRACK)
+		{ // array assignment
+			if (!(i = position(id)))
+			{
+				error(11); // Undeclared identifier.
+			}
+
+			mask_array *mk = (mask_array *)&table[i];
+			kind = mk->kind;
+			curArray = *mk;
+			match_array_dim();
+
+			if (sym == SYM_BECOMES)
+			{
+				getsym();
+			}
+			else
+			{
+				error(13); // ':=' expected.
+			}
+
+			set = uniteset(createset(SYM_RBRACK, SYM_NULL), fsys);
+			expression(fsys);
+			destroyset(set);
+
+			if (kind == ID_ARRAY)
+				gen(STA, level - mk->attr->level, mk->attr->address);
+			else if (kind == ID_PARAMETER_A)
+			{
+				gen(LOD, 0, mk->attr->address); //取出传进的数组在主活动记录的偏移
+				gen(STP, 1, 0);					//i.a用不到，i.l必为1，与level - mk->attr->level值相同
+			}
 		}
 		else
-		{
-			error(13); // ':=' expected.
-		}
-		expression(fsys);
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		mk = (mask*) &table[i];
-=======
-		mk = (mask *)&table[i];
->>>>>>> parent of f50d058... 代码格式化
-=======
-		mk = (mask *)&table[i];
->>>>>>> parent of f50d058... 代码格式化
-=======
-		mk = (mask *)&table[i];
->>>>>>> parent of f50d058... 代码格式化
-=======
-		mk = (mask*)& table[i];
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
-		if (i)
-		{
-			gen(STO, level - mk->level, mk->address); //变量赋值语句翻译为STO 数组赋值翻译成什么？
+		{ // variable assignment
+			mask *mk;
+			if (!(i = position(id)))
+			{ //发现未定义的变量
+				if (sym != SYM_COLON)
+					error(11); // Undeclared identifier.
+				else		   //id是一个label
+				{			   //开始对label的处理
+					strcpy(label_name[0], id);
+					int k = label_num;
+					while (strcmp(label_name[k--], id) != 0) //检查是否有重复的label
+						;
+
+					if (++k)
+					{
+						error(34); //有重复的label
+					}
+					else
+					{
+						label_num++;
+						if (label_num > NLABEL)
+						{
+							error(35); //label过多
+						}
+						else
+						{
+							strcpy(label_name[label_num], id);
+							label_cx[label_num] = cx; //存放label对应的地址
+						}
+						getsym();
+						statement(fsys);
+						return; //完成对 label: 的匹配
+					}
+				} //else 至此完成对label的处理
+			}
+			else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_PARAMETER_I)
+			{
+				error(12); // Illegal assignment.
+				i = 0;
+			}
+			mk = (mask *)&table[i];
+			kind = mk->kind;
+
+			if (sym == SYM_BECOMES)
+			{
+				getsym();
+			}
+			else
+			{
+				error(13); // ':=' expected.
+			}
+
+			expression(fsys);
+
+			if (kind == ID_VARIABLE)
+				gen(STO, level - mk->level, mk->address);
+			else if (kind == ID_PARAMETER_I)
+			{
+				gen(LOD, 0, mk->address);
+				gen(STI, 1, 0); //参数调用认为层差为 1，不用 i.a
+			}
 		}
 	}
 	else if (sym == SYM_CALL)
@@ -960,28 +1065,10 @@ void statement(symset fsys)
 			}
 			else if (table[i].kind == ID_PROCEDURE)
 			{
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-				mask* mk;
-<<<<<<< HEAD
-				mk = (mask*) &table[i];
-=======
-				mask *mk;
-				mk = (mask *)&table[i];
->>>>>>> parent of f50d058... 代码格式化
-=======
-				mask *mk;
-				mk = (mask *)&table[i];
->>>>>>> parent of f50d058... 代码格式化
-=======
-				mask *mk;
-				mk = (mask *)&table[i];
->>>>>>> parent of f50d058... 代码格式化
-=======
-				mk = (mask*)& table[i];
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
-				gen(CAL, level - mk->level, mk->address);
+				//mask *mk;
+				//mk = (mask *)&table[i];
+				//gen(CAL, level - mk->level, mk->address);
+				call(i, fsys);
 			}
 			else
 			{
@@ -993,11 +1080,27 @@ void statement(symset fsys)
 	else if (sym == SYM_IF)
 	{ // if statement
 		getsym();
-		set1 = createset(SYM_THEN, SYM_DO, SYM_NULL);
+
+		if (sym == SYM_LPAREN)
+		{
+			getsym();
+		}
+		else
+			error(33); //Missing '('.
+
+		set1 = createset(SYM_RPAREN, SYM_NULL);
 		set = uniteset(set1, fsys);
-		condition(set);
+		or_condition(set);
 		destroyset(set1);
 		destroyset(set);
+
+		if (sym == SYM_RPAREN)
+		{
+			getsym();
+		}
+		else
+			error(33); //Missing ')'.
+
 		if (sym == SYM_THEN)
 		{
 			getsym();
@@ -1008,8 +1111,33 @@ void statement(symset fsys)
 		}
 		cx1 = cx;
 		gen(JPC, 0, 0);
+
 		statement(fsys);
-		code[cx1].a = cx;
+
+		if (sym == SYM_SEMICOLON)
+		{
+			getsym();
+		}
+		else
+		{
+			error(10);
+		}
+
+		if (sym == SYM_ELSE)
+		{
+			int cx2 = cx;
+			gen(JMP, 0, 0);
+			code[cx1].a = cx;
+			getsym();
+			statement(fsys);
+			code[cx2].a = cx;
+		}
+		else
+		{
+			sym_stack[pre_sym_count++] = sym;
+			sym = SYM_SEMICOLON;
+			code[cx1].a = cx;
+		}
 	}
 	else if (sym == SYM_BEGIN)
 	{ // block
@@ -1044,13 +1172,30 @@ void statement(symset fsys)
 	{ // while statement
 		cx1 = cx;
 		getsym();
-		set1 = createset(SYM_DO, SYM_NULL);
+
+		if (sym == SYM_LPAREN)
+		{
+			getsym();
+		}
+		else
+			error(33); //Missing '('.
+
+		set1 = createset(SYM_RPAREN, SYM_NULL);
 		set = uniteset(set1, fsys);
-		condition(set);
+		or_condition(set);
 		destroyset(set1);
 		destroyset(set);
+
 		cx2 = cx;
 		gen(JPC, 0, 0);
+
+		if (sym == SYM_RPAREN)
+		{
+			getsym();
+		}
+		else
+			error(33); //Missing ')'.
+
 		if (sym == SYM_DO)
 		{
 			getsym();
@@ -1059,14 +1204,109 @@ void statement(symset fsys)
 		{
 			error(18); // 'do' expected.
 		}
+
 		statement(fsys);
 		gen(JMP, 0, cx1);
 		code[cx2].a = cx;
 	}
+	else if (sym == SYM_PRT)
+	{ // while statement
+		getsym();
+		if (sym == SYM_LPAREN)
+		{
+			getsym();
+		}
+		else
+			error(33);
+		if (sym == SYM_RPAREN)
+		{
+			gen(PRT, 0, 0);
+			getsym();
+		}
+		else
+		{
+			set = createset(SYM_COMMA, SYM_RPAREN, SYM_NULL);
+			set1 = uniteset(fsys, set);
+			expression(set);
+			destroyset(set1);
+			destroyset(set);
+			gen(PRT, 0, 1);
+			while (sym == SYM_COMMA)
+			{
+				set = createset(SYM_COMMA, SYM_RPAREN, SYM_NULL);
+				set1 = uniteset(fsys, set);
+				getsym();
+				expression(set);
+				destroyset(set1);
+				destroyset(set);
+				gen(PRT, 0, 1);
+			}
+			if (sym == SYM_RPAREN)
+			{
+				getsym();
+			}
+			else
+			{
+				error(22); //missing ')'
+			}
+		}
+	}
+	else if (sym == SYM_GOTO)
+	{
+		getsym();
+		if (sym != SYM_IDENTIFIER)
+		{
+			error(8);
+		}
+		else
+		{
+			getsym();
+			if (sym != SYM_SEMICOLON)
+			{
+				error(36); //缺少';'
+			}
+			else //语法正确
+			{
+				goto_num++;
+				if (goto_num > NGOTO)
+				{
+					error(37); //goto过多
+				}
+				else
+				{
+					strcpy(goto_dest[goto_num], id);
+					goto_cx[goto_num] = cx; //记录这个goto产生的JMP指令的地址
+					gen(JMP, 0, 0);
+				}
+			}
+		}
+	}
 	test(fsys, phi, 19);
+} // statement
+
+void enter_parameter(int kind) //向相应函数表项下增加参数结点
+{
+	int i = all_procedure[now_procedure].para_num;
+	procedure_parameter *new_para = (procedure_parameter *)malloc(sizeof(procedure_parameter));
+	new_para->kind = kind;
+	new_para->next = NULL;
+	if (i)
+	{
+		procedure_parameter *p = all_procedure[now_procedure].next;
+		while (--i)
+		{
+			p = p->next;
+		}
+		p->next = new_para;
+	}
+	else
+	{
+		all_procedure[now_procedure].next = new_para;
+	}
+	all_procedure[now_procedure].para_num++;
 }
 
-//程序体
+//////////////////////////////////////////////////////////////////////
 void block(symset fsys)
 {
 	int cx0; // initial code index
@@ -1075,25 +1315,9 @@ void block(symset fsys)
 	int savedTx;
 	symset set1, set;
 
-	dx = 3;
+	dx = 3 + parameter_num;
 	block_dx = dx;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	mk = (mask*) &table[tx];
-=======
-	mk = (mask *)&table[tx];
->>>>>>> parent of f50d058... 代码格式化
-=======
-	mk = (mask *)&table[tx];
->>>>>>> parent of f50d058... 代码格式化
-=======
-	mk = (mask *)&table[tx];
->>>>>>> parent of f50d058... 代码格式化
-=======
-	mk = (mask*)& table[tx];
->>>>>>> parent of 7b3114b... Merge branch 'ZhuBranch' into main
+	mk = (mask *)&table[tx - parameter_num]; //还原函数在符号表中位置
 	mk->address = cx;
 	gen(JMP, 0, 0);
 	if (level > MAXLEVEL)
@@ -1146,8 +1370,8 @@ void block(symset fsys)
 			} while (sym == SYM_IDENTIFIER);
 		}			   // if
 		block_dx = dx; //save dx before handling procedure call!
-		while (sym == SYM_PROCEDURE)
-		{ // procedure declarations
+		while (sym == SYM_PROCEDURE && level == 0)
+		{ // procedure declarations 大改
 			getsym();
 			if (sym == SYM_IDENTIFIER)
 			{
@@ -1159,17 +1383,71 @@ void block(symset fsys)
 				error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
 			}
 
-			if (sym == SYM_SEMICOLON)
+			level++;
+			parameter_num = 0;
+			dx = 3;
+			savedTx = tx;
+			if (sym == SYM_LPAREN)
 			{
 				getsym();
+				while (sym == SYM_VAR)
+				{
+					getsym();
+					if (sym == SYM_IDENTIFIER)
+					{
+						getsym();
+						if (sym == SYM_LBRACK)
+						{ //标识符是数组
+							cur_dim = 0;
+							lastArray.kind = ID_PARAMETER_A;
+							strcpy(lastArray.name, id);
+							dimDeclaration();
+							enter(ID_PARAMETER_A);
+							enter_parameter(ID_PARAMETER_A);
+						}
+						else //标识符是变量
+						{
+							enter(ID_VARIABLE);
+							enter_parameter(ID_VARIABLE);
+						}
+						parameter_num++;
+					}
+					else if (sym == SYM_QUOTE) //标识符是引用
+					{
+						getsym();
+						if (sym == SYM_IDENTIFIER)
+						{
+							enter(ID_PARAMETER_I);
+							enter_parameter(ID_PARAMETER_I);
+							getsym();
+							parameter_num++;
+						}
+					}
+					else
+					{
+						error(42); //待修改 丢失“&”或id
+					}
+					if (sym == SYM_COMMA)
+					{
+						getsym();
+					}
+				}
+				if (sym == SYM_RPAREN)
+				{
+					getsym();
+				}
+				else
+				{
+					error(22); // Missing ')'
+				}
 			}
 			else
 			{
-				error(5); // Missing ',' or ';'.
+				error(33); // Missing '('.
 			}
-
-			level++;
-			savedTx = tx;
+			now_procedure++;
+			//level++;
+			//savedTx = tx;
 			set1 = createset(SYM_SEMICOLON, SYM_NULL);
 			set = uniteset(set1, fsys);
 			block(set);
@@ -1212,38 +1490,9 @@ void block(symset fsys)
 	gen(OPR, 0, OPR_RET); // return
 	test(fsys, phi, 8);	  // test for error: Follow the statement is an incorrect symbol.
 	listcode(cx0, cx);
-}
+} // block
 
-/*
-2.5 代码执行
-为了简单起见，我们假设有一个PL/0 处理机，它能够解释执行PL/0 编译程
-序所生成的目标代码。这个PL/0 处理机有两类存贮、一个指令寄存器和三个地
-址寄存器组成。程序（目标代码）存贮称为code，由编译程序装入，在目标代
-码执行过程中保持不变，因此它可被看成是“只读”存贮器。数据存贮S 组织成
-为一个栈，所有的算术运算均对栈顶元和次栈顶元进行（一元运算仅作用于栈顶
-元），并用结果值代替原来的运算对象。栈顶元的地址（下标）记在栈顶寄存器
-T 中，指令寄存器I 包含着当前正在解释执行的指令，程序地址寄存器P 指向下
-一条将取出的指令。
-PL/0 的每一个过程可能包含着局部变量，因为这些过程可以被递归地调用，
-故在实际调用前，无法为这些局部变量分配存贮地址。各个过程的数据区在存贮
-栈S 内顺序叠起来，每个过程，除用户定义的变量外，还摇篮有它自己的内部信
-息，即调用它的程序段地址（返回地址）和它的调用者的数据区地址。在过程终
-止后，为了恢复原来程序的执行，这两个地址都是必须的。我们可将这两个内部
-值作为位于该过程数据区的内部式隐式局部变量。我们把它们分别称为返回地址
-（return address）RA 和动态链（dynamic link）DL。动态链的头，即最新分
-配的数据区的地址，保存在某地址寄存器B 内。
-因为实际的存贮分配是运行（解释）时进行的，编译程序不能为其生成的代
-码提供绝对地址，它只能确定变量在数据区内的位置，因此它只能提供相对地址。
-为了正确地存取数据，解释程序需将某个修正量加到相应的数据区的基地址上
-去。若变量是局部于当前正在解释的过程，则此基地址由寄存器B 给出，否则，
-就需要顺着数据区的链逐层上去找。然而遗憾的是，编译程序只能知道存取路线
-表2-2 if-while 语句目标代码生成模式
-12
-的表态长度，同时动态链保存的则是过程活动的动态历史，而这两条存取路线并
-不总是一样。
-*/
-
-//根据层次差并从当前数据区沿着静态链查找，以便获取变量实际所在的数据区其地址
+//////////////////////////////////////////////////////////////////////
 int base(int stack[], int currentLevel, int levelDiff)
 {
 	int b = currentLevel;
@@ -1251,9 +1500,10 @@ int base(int stack[], int currentLevel, int levelDiff)
 	while (levelDiff--)
 		b = stack[b];
 	return b;
-}
+} // base
 
-//完成各种指令的执行工作
+//////////////////////////////////////////////////////////////////////
+// interprets and executes codes.
 void interpret()
 {
 	int pc; // program counter
@@ -1261,6 +1511,8 @@ void interpret()
 	int top;	   // top of stack
 	int b;		   // program, base, and top-stack register
 	instruction i; // instruction register
+
+	int k;
 
 	printf("Begin executing PL/0 program.\n");
 
@@ -1352,10 +1604,39 @@ void interpret()
 		case LOD:
 			stack[++top] = stack[base(stack, b, i.l) + i.a];
 			break;
+<<<<<<< HEAD
+<<<<<<< HEAD
+		case LDA: //使用栈顶存放的偏移量
+=======
+		case LDA:
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+=======
+		case LDA:
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+			stack[top] = stack[base(stack, b, i.l) + stack[top] + i.a];
+			break;
 		case STO:
 			stack[base(stack, b, i.l) + i.a] = stack[top];
 			printf("%d\n", stack[top]);
 			top--;
+			break;
+<<<<<<< HEAD
+<<<<<<< HEAD
+		case STA: //使用次栈顶存放的偏移量
+			stack[base(stack, b, i.l) + stack[top - 1] + i.a] = stack[top];
+			printf("%d\n", stack[top]);
+			top = top - 2;
+=======
+=======
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+		case STA:
+			stack[base(stack, b, i.l) + stack[top - 1] + i.a] = stack[top];
+			printf("%d\n", stack[top]);
+			top = top - 2; //此处存疑
+<<<<<<< HEAD
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+=======
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 			break;
 		case CAL:
 			stack[top + 1] = base(stack, b, i.l);
@@ -1376,18 +1657,66 @@ void interpret()
 				pc = i.a;
 			top--;
 			break;
+		case RDM:
+			if (i.a == 0)
+				stack[++top] = rand();
+			else
+				stack[++top] = rand() % i.a;
+			break;
+		case PRT:
+			if (i.a == 0)
+				printf("\n");
+			else
+				printf("%d\n", stack[top--]);
+			break;
+		case PAS:
+			for (k = i.a; k > 0; k--)
+			{
+				stack[top + 3] = stack[top];
+				top--;
+			}
+			break;
+		case LDP: //LDA改编，i.a从栈顶取
+			top--;
+			stack[top] = stack[base(stack, b, i.l) + stack[top] + stack[top + 1]]; //活动记录基址+数组内偏移+数组首地址偏移
+			break;
+		case STP: //同理
+			stack[base(stack, b, i.l) + stack[top - 2] + stack[top]] = stack[top - 1];
+			printf("%d\n", stack[top - 1]);
+<<<<<<< HEAD
+<<<<<<< HEAD
+			top -= 3;
+=======
+			top -= 3; //此处存疑
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+=======
+			top -= 3; //此处存疑
+>>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
+			break;
+		case STI:
+			stack[base(stack, b, i.l) + stack[top]] = stack[top - 1];
+			printf("%d\n", stack[top - 1]);
+			top -= 2;
+			break;
 		} // switch
 	} while (pc);
 
 	printf("End executing PL/0 program.\n");
-}
+} // interpret
 
+//////////////////////////////////////////////////////////////////////
 void main()
 {
 	FILE *hbin;
 	char s[80];
 	int i;
 	symset set, set1, set2;
+
+	srand((unsigned)time(0));
+
+	lastArray.attr = (attribute *)malloc(sizeof(attribute));
+	parameter_num = 0;
+	now_procedure = 0;
 
 	printf("Please input source file name: "); // get file name to be compiled
 	scanf("%s", s);
@@ -1398,12 +1727,12 @@ void main()
 	}
 
 	phi = createset(SYM_NULL);
-	relset = createset(SYM_EQU, SYM_NEQ, SYM_LES, SYM_LEQ, SYM_AND, SYM_OR, SYM_NOT, SYM_GTR, SYM_GEQ, SYM_NULL);
+	relset = createset(SYM_EQU, SYM_NEQ, SYM_LES, SYM_LEQ, SYM_GTR, SYM_GEQ, SYM_NULL);
 
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
-	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
+	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_GOTO, SYM_NULL); //此处不应有SYM_IDENTIFIER
+	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NOT, SYM_RDM, SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
 	ch = ' ';
@@ -1424,6 +1753,23 @@ void main()
 	destroyset(statbegsys);
 	destroyset(facbegsys);
 
+	for (int n = 1; n <= goto_num; n++)
+	{ //为每个goto产生的JMP指令回填跳转地址
+		int m = label_num;
+		strcpy(label_name[0], goto_dest[n]); //将goto的目标作为哨兵
+		while (strcmp(label_name[m--], goto_dest[n]) != 0)
+			;
+
+		if (++m)
+		{
+			code[goto_cx[n]].a = label_cx[m]; //回填
+		}
+		else
+		{
+			error(38); //不存在这样的label
+		}
+	}
+
 	if (sym != SYM_PERIOD)
 		error(9); // '.' expected.
 	if (err == 0)
@@ -1438,4 +1784,7 @@ void main()
 	else
 		printf("There are %d error(s) in PL/0 program.\n", err);
 	listcode(0, cx);
-}
+} // main
+
+//////////////////////////////////////////////////////////////////////
+// eof pl0.c

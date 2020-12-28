@@ -15,3 +15,4 @@ symset uniteset(symset s1, symset s2);
 int inset(int elem, symset s);
 
 #endif
+// EOF set.h

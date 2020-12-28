@@ -1,0 +1,29 @@
+var i, j, &k = j, m[2], &n = m[1], &p = k;
+
+procedure swap(var &a,var &b)
+var c;
+begin
+	c := a;
+	a := b;
+	b := c; 
+end;
+
+begin
+	 i := 10;
+	 j := 20;
+	 m[0] := i; 
+	 m[1] := j;
+	 
+	 call swap(i,j);
+	 print(i,j);
+	 
+	 call swap(i,k);
+	 print(i,k);
+	 
+	 call swap(i,m[1]);
+	 print(i,m[1]);
+	 
+	 call swap(i,n);
+	 print(i,n,p);
+	 
+end.
