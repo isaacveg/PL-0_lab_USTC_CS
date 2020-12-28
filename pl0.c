@@ -458,7 +458,7 @@ void vardeclaration(void)
 			enter(ID_VARIABLE);
 	}
 	else if (sym == SYM_QUOTE)
-	{
+	{ //引用变量
 		getsym();
 		if (sym == SYM_IDENTIFIER)
 		{
@@ -508,16 +508,6 @@ void vardeclaration(void)
 					}
 					else
 						error(11); //Undeclared identifier.
-
-					/*if (i != 0)
-					{
-						//对引用类型所指向的地址进行回填
-						((mask *)table + tx)->address = ((mask *)table + i)->address;
-						getsym();
-					}
-					else
-						error(11); //Undeclared identifier.
-					*/
 				}
 				else
 					error(31); //There must be a identify to follow '='.
@@ -916,6 +906,10 @@ void call(int i, symset fsys)
 			if (sym == SYM_COMMA)
 			{
 				getsym();
+			}
+			else if (sym != SYM_RPAREN)
+			{
+				error(43); // missing ','
 			}
 			parameter = parameter->next;
 		}
@@ -1595,7 +1589,7 @@ void interpret()
 		case LOD:
 			stack[++top] = stack[base(stack, b, i.l) + i.a];
 			break;
-		case LDA:
+		case LDA: //使用栈顶存放的偏移量
 			stack[top] = stack[base(stack, b, i.l) + stack[top] + i.a];
 			break;
 		case STO:
@@ -1603,10 +1597,10 @@ void interpret()
 			printf("%d\n", stack[top]);
 			top--;
 			break;
-		case STA:
+		case STA: //使用次栈顶存放的偏移量
 			stack[base(stack, b, i.l) + stack[top - 1] + i.a] = stack[top];
 			printf("%d\n", stack[top]);
-			top = top - 2; //此处存疑
+			top = top - 2;
 			break;
 		case CAL:
 			stack[top + 1] = base(stack, b, i.l);
@@ -1653,7 +1647,7 @@ void interpret()
 		case STP: //同理
 			stack[base(stack, b, i.l) + stack[top - 2] + stack[top]] = stack[top - 1];
 			printf("%d\n", stack[top - 1]);
-			top -= 3; //此处存疑
+			top -= 3;
 			break;
 		case STI:
 			stack[base(stack, b, i.l) + stack[top]] = stack[top - 1];

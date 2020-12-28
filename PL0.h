@@ -60,7 +60,7 @@ enum symtype
 	SYM_RDM,	// random
 	SYM_PRT,	// print
 	SYM_COLON,	// :
-	SYM_QUOTE,	//&
+	SYM_QUOTE,	// &
 };
 
 enum idtype
@@ -70,8 +70,8 @@ enum idtype
 	ID_PROCEDURE,
 	ID_ARRAY,
 	ID_REFERENCE,
-	ID_PARAMETER_I,//引用参数
-	ID_PARAMETER_A//数组参数
+	ID_PARAMETER_I, //引用参数
+	ID_PARAMETER_A	//数组参数
 };
 
 enum opcode
@@ -166,7 +166,8 @@ char *err_msg[] =
 		/* 39 */ "missing '['.",
 		/* 40 */ "incompatible parameters.",
 		/* 41 */ "incorrect parameter passing, wrong number or missing ')'.",
-		/* 42 */ "expecting '&' or identifier of ID_VARIABLE"};
+		/* 42 */ "expecting '&' or identifier of ID_VARIABLE",
+		/* 43 */ "missing ','."};
 
 //////////////////////////////////////////////////////////////////////
 char ch;			   // last character read
@@ -210,7 +211,7 @@ char csym[NSYM + 1] =
 #define MAXINS 16 //增加LDA和STA用于数组，
 char *mnemonic[MAXINS] =
 	{
-		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT", 
+		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT",
 		"PAS", "LDP", "STP", "STI"};
 
 typedef struct //数组附加属性
@@ -223,11 +224,6 @@ typedef struct //数组附加属性
 	int sum;		  //该数组总元素个数，max_index = num[0] * size[0];
 } attribute;
 // a[2][1]  address + 2 * 4 + 1 * 1 = address + 9
-/*
-1  2  3  4
-5  6  7  8
-9  10 11 12
-*/
 
 typedef struct //const使用
 {
@@ -242,7 +238,7 @@ typedef struct //variable与procedure使用
 {
 	char name[MAXIDLEN + 1];
 	int kind;
-	short level;	//procedure中保存函数表中偏移
+	short level;   //procedure中保存函数表中偏移
 	short address; //栈中地址
 } mask;
 
@@ -256,15 +252,15 @@ typedef struct mask_array //array使用
 /////建立函数参数表
 typedef struct procedure_parameter
 {
-	int kind;	//参数类型  传值，传地址，传数组
+	int kind; //参数类型  传值，传地址，传数组
 	struct procedure_parameter *next;
-}procedure_parameter;
+} procedure_parameter;
 
-typedef struct 
+typedef struct
 {
-	int para_num;	//参数数量
-	procedure_parameter *next; 
-}procedure_head;
+	int para_num; //参数数量
+	procedure_parameter *next;
+} procedure_head;
 
 procedure_head all_procedure[MAXPROCEDURE]; //全体函数参量表
 short now_procedure;

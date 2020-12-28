@@ -40,10 +40,12 @@ begin
 
 	call insert(p);
   
+  print();
   i := 0;
   while ( i < N ) do 
   begin
        print(p[i]);
+       print();
        i := i + 1;
   end;
   
