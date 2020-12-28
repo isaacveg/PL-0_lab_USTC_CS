@@ -40,24 +40,10 @@ begin
 
 	call insert(p);
   
-<<<<<<< HEAD
-<<<<<<< HEAD
-  print();
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
   i := 0;
   while ( i < N ) do 
   begin
        print(p[i]);
-<<<<<<< HEAD
-<<<<<<< HEAD
-       print();
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
        i := i + 1;
   end;
   

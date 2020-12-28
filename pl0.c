@@ -458,7 +458,7 @@ void vardeclaration(void)
 			enter(ID_VARIABLE);
 	}
 	else if (sym == SYM_QUOTE)
-	{ //引用变量
+	{
 		getsym();
 		if (sym == SYM_IDENTIFIER)
 		{
@@ -508,11 +508,6 @@ void vardeclaration(void)
 					}
 					else
 						error(11); //Undeclared identifier.
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 
 					/*if (i != 0)
 					{
@@ -523,10 +518,6 @@ void vardeclaration(void)
 					else
 						error(11); //Undeclared identifier.
 					*/
-<<<<<<< HEAD
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 				}
 				else
 					error(31); //There must be a identify to follow '='.
@@ -1604,15 +1595,7 @@ void interpret()
 		case LOD:
 			stack[++top] = stack[base(stack, b, i.l) + i.a];
 			break;
-<<<<<<< HEAD
-<<<<<<< HEAD
-		case LDA: //使用栈顶存放的偏移量
-=======
 		case LDA:
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
-		case LDA:
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 			stack[top] = stack[base(stack, b, i.l) + stack[top] + i.a];
 			break;
 		case STO:
@@ -1620,23 +1603,10 @@ void interpret()
 			printf("%d\n", stack[top]);
 			top--;
 			break;
-<<<<<<< HEAD
-<<<<<<< HEAD
-		case STA: //使用次栈顶存放的偏移量
-			stack[base(stack, b, i.l) + stack[top - 1] + i.a] = stack[top];
-			printf("%d\n", stack[top]);
-			top = top - 2;
-=======
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 		case STA:
 			stack[base(stack, b, i.l) + stack[top - 1] + i.a] = stack[top];
 			printf("%d\n", stack[top]);
 			top = top - 2; //此处存疑
-<<<<<<< HEAD
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 			break;
 		case CAL:
 			stack[top + 1] = base(stack, b, i.l);
@@ -1683,15 +1653,7 @@ void interpret()
 		case STP: //同理
 			stack[base(stack, b, i.l) + stack[top - 2] + stack[top]] = stack[top - 1];
 			printf("%d\n", stack[top - 1]);
-<<<<<<< HEAD
-<<<<<<< HEAD
-			top -= 3;
-=======
 			top -= 3; //此处存疑
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
-			top -= 3; //此处存疑
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 			break;
 		case STI:
 			stack[base(stack, b, i.l) + stack[top]] = stack[top - 1];

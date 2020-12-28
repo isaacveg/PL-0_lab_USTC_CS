@@ -60,15 +60,7 @@ enum symtype
 	SYM_RDM,	// random
 	SYM_PRT,	// print
 	SYM_COLON,	// :
-<<<<<<< HEAD
-<<<<<<< HEAD
-	SYM_QUOTE,	// &
-=======
 	SYM_QUOTE,	//&
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
-	SYM_QUOTE,	//&
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 };
 
 enum idtype
@@ -78,18 +70,8 @@ enum idtype
 	ID_PROCEDURE,
 	ID_ARRAY,
 	ID_REFERENCE,
-<<<<<<< HEAD
-<<<<<<< HEAD
-	ID_PARAMETER_I, //引用参数
-	ID_PARAMETER_A	//数组参数
-=======
 	ID_PARAMETER_I,//引用参数
 	ID_PARAMETER_A//数组参数
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
-	ID_PARAMETER_I,//引用参数
-	ID_PARAMETER_A//数组参数
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 };
 
 enum opcode
@@ -228,15 +210,7 @@ char csym[NSYM + 1] =
 #define MAXINS 16 //增加LDA和STA用于数组，
 char *mnemonic[MAXINS] =
 	{
-<<<<<<< HEAD
-<<<<<<< HEAD
-		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT",
-=======
 		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT", 
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
-		"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "LDA", "STA", "RDM", "PRT", 
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 		"PAS", "LDP", "STP", "STI"};
 
 typedef struct //数组附加属性
@@ -249,20 +223,11 @@ typedef struct //数组附加属性
 	int sum;		  //该数组总元素个数，max_index = num[0] * size[0];
 } attribute;
 // a[2][1]  address + 2 * 4 + 1 * 1 = address + 9
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 /*
 1  2  3  4
 5  6  7  8
 9  10 11 12
 */
-<<<<<<< HEAD
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 
 typedef struct //const使用
 {
@@ -277,15 +242,7 @@ typedef struct //variable与procedure使用
 {
 	char name[MAXIDLEN + 1];
 	int kind;
-<<<<<<< HEAD
-<<<<<<< HEAD
-	short level;   //procedure中保存函数表中偏移
-=======
 	short level;	//procedure中保存函数表中偏移
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
-	short level;	//procedure中保存函数表中偏移
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 	short address; //栈中地址
 } mask;
 
@@ -299,20 +256,6 @@ typedef struct mask_array //array使用
 /////建立函数参数表
 typedef struct procedure_parameter
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-	int kind; //参数类型  传值，传地址，传数组
-	struct procedure_parameter *next;
-} procedure_parameter;
-
-typedef struct
-{
-	int para_num; //参数数量
-	procedure_parameter *next;
-} procedure_head;
-=======
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 	int kind;	//参数类型  传值，传地址，传数组
 	struct procedure_parameter *next;
 }procedure_parameter;
@@ -322,10 +265,6 @@ typedef struct
 	int para_num;	//参数数量
 	procedure_parameter *next; 
 }procedure_head;
-<<<<<<< HEAD
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
-=======
->>>>>>> d58c4d173ec09e8fa5c776b724a6d7ebb424c191
 
 procedure_head all_procedure[MAXPROCEDURE]; //全体函数参量表
 short now_procedure;
